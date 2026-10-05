@@ -90,6 +90,12 @@ The [saved discovery-diversity audit](DISCOVERY-DIVERSITY-AUDIT.md) found that s
 
 ## Scores and public display
 
+Career cards now place a separately headed **Attendance & eligibility** section immediately after the fit-score heading, before the schedule and score explanation. Existing public caution codes supply eligibility uncertainty, approval, waitlist, restrictions, prerequisites, registration, price, venue and inferred-timezone warnings, with entry-related cautions first. Each caution appears once; relevance, hiring and participant-evidence cautions remain in the fit explanation. Founder-only cards are unchanged.
+
+The section always asks readers to check current entry requirements and availability, including when no attendance caveats were recorded. A missing caution is not proof of eligibility or unrestricted entry, and open registration does not confirm eligibility. No new eligibility verdict, score, private restriction text, source quote or publication field is inferred. This presentation applies to existing v1-v4 assessments without rescoring, data migration or changes to human publication approval. Specific company-name/photo-ID requirements remain private evidence for operator review rather than automatically copied into public cards.
+
+Attendance-display verification passed formatting, lint, TypeScript, `git diff --check`, all 251 offline tests (6 unit, 210 ingestion, 22 dashboard, 13 review), a production build, 3 compiled-page checks and 13 runtime checks in a fresh credential-free copy under ignored `codex-tmp/`. Coverage includes all attendance codes, deterministic grouping without mutation or duplicate warnings, unchanged v1-v4 assessments, accessible event-specific headings, warning placement, empty/evidence-only caution lists, unchanged founder cards and registration links, and exclusion of private evidence. A desktop browser check of the fictional career sample confirmed the separate highlighted section and heading order. Mobile visual layout and real PostgreSQL integration were not reverified. No paid calls, existing database updates, real-event publication, new dependencies or schema changes were needed.
+
 New assessments use `career-score-v4`; saved `career-score-v1`, `career-score-v2` and `career-score-v3` assessments remain readable with their original scores. All versions separate usefulness from evidence confidence and use the same weights:
 
 | Component        | Weight | Initial supported-evidence rule                                                                                                |

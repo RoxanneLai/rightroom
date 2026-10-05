@@ -2,6 +2,7 @@ import type { CareerAssessment } from "@/lib/career/contracts";
 import {
   CAREER_CAUTION_LABELS,
   CAREER_REASON_LABELS,
+  groupCareerCautions,
 } from "@/lib/career/display";
 
 export function CareerSummary({
@@ -9,6 +10,7 @@ export function CareerSummary({
 }: {
   assessment: CareerAssessment;
 }) {
+  const { evidence } = groupCareerCautions(assessment.cautions);
   return (
     <div className="recommendation">
       <h4>Why this room fits</h4>
@@ -54,9 +56,9 @@ export function CareerSummary({
             ? "No hiring advertised in the evidence."
             : "Hiring opportunities are unknown."}
       </p>
-      {assessment.cautions.length > 0 && (
+      {evidence.length > 0 && (
         <ul className="career-cautions">
-          {assessment.cautions.map((caution) => (
+          {evidence.map((caution) => (
             <li key={caution}>{CAREER_CAUTION_LABELS[caution]}</li>
           ))}
         </ul>

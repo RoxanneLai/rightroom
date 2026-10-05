@@ -55,6 +55,32 @@
   line-height: 1.7;
 }
 
+.career-attendance {
+  margin-top: 16px;
+  padding: 14px 16px;
+  border: 1px solid #d8d1bc;
+  border-left: 4px solid #817044;
+  border-radius: 5px;
+  background: #faf7ed;
+}
+
+.career-attendance h4 {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.career-attendance .career-cautions {
+  margin: 8px 0;
+}
+
+.career-attendance p {
+  margin: 8px 0 0;
+  color: #5d604f;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
 body {
   margin: 0;
   background: var(--background);

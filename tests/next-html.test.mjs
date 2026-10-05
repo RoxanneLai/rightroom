@@ -34,6 +34,19 @@ test("career sample is clearly fictional and explains scores, unknowns and cauti
   assert.match(html, /Role fit/);
   assert.match(html, /Hiring/);
   assert.match(html, /ranking hypothesis/);
+  const cards = html.match(/<article\b[\s\S]*?<\/article>/g) ?? [];
+  for (const card of cards) {
+    assert.match(card, /Attendance &amp; eligibility/);
+    assert.match(
+      card,
+      /Career fit and open registration do not confirm attendance eligibility/,
+    );
+    assert.ok(
+      card.indexOf("career-attendance") < card.indexOf("Why this room fits"),
+    );
+  }
+  assert.match(html, /Attendance requires approval/);
+  assert.match(html, /Technical prerequisites apply; check the listing/);
   assert.equal((html.match(/<article\b/g) ?? []).length, 3);
   assert.match(
     html,

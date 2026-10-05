@@ -1,5 +1,33 @@
 import type { CareerAssessment } from "./contracts.ts";
 
+type CareerCaution = CareerAssessment["cautions"][number];
+
+const ATTENDANCE_CAUTIONS: readonly CareerCaution[] = [
+  "eligibility_unknown",
+  "approval_required",
+  "waitlist",
+  "restrictions",
+  "prerequisites",
+  "registration_unknown",
+  "price_unknown",
+  "venue_unknown",
+  "timezone_inferred_nyc",
+];
+
+/** Group existing public cautions without changing the stored assessment. */
+export function groupCareerCautions(cautions: readonly CareerCaution[]): {
+  attendance: CareerCaution[];
+  evidence: CareerCaution[];
+} {
+  const unique = new Set(cautions);
+  return {
+    attendance: ATTENDANCE_CAUTIONS.filter((caution) => unique.has(caution)),
+    evidence: [...unique].filter(
+      (caution) => !ATTENDANCE_CAUTIONS.includes(caution),
+    ),
+  };
+}
+
 export const CAREER_CAUTION_LABELS: Record<
   CareerAssessment["cautions"][number],
   string

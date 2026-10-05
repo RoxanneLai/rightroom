@@ -3,6 +3,7 @@ import { ScoreBadge } from "@/components/ScoreBadge";
 import { formatEventSchedule, formatStoredPrice } from "@/lib/events";
 import type { DashboardEvent } from "@/lib/dashboard/types";
 import { CareerSummary } from "@/components/CareerSummary";
+import { CareerAttendance } from "@/components/CareerAttendance";
 
 const registrationLabels = {
   open: "Registration open",
@@ -67,6 +68,12 @@ export function EventCard({
             <ScoreBadge score={event.networkingScore} prominent />
           )}
         </div>
+        {event.careerAssessment && (
+          <CareerAttendance
+            assessment={event.careerAssessment}
+            eventId={event.id}
+          />
+        )}
         <div className="event-details">
           <p>
             <CalendarDays size={15} aria-hidden="true" />

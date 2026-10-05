@@ -293,6 +293,133 @@ test("homepage and career alias rank published career assessments without leakin
   assert.equal(databaseCalls, callsBefore);
 });
 
+test("career attendance warnings precede fit explanations with accessible headings and no private evidence", async () => {
+  const expected = [
+    ["eligibility_unknown", "Attendance eligibility not confirmed"],
+    ["approval_required", "Attendance requires approval"],
+    ["waitlist", "Waitlist; attendance is not confirmed"],
+    ["restrictions", "Attendance restrictions apply; check the listing"],
+    ["prerequisites", "Technical prerequisites apply; check the listing"],
+    ["registration_unknown", "Registration availability not stated"],
+    ["price_unknown", "Admission price not stated"],
+    ["venue_unknown", "Exact venue not stated"],
+    ["timezone_inferred_nyc", "NYC timezone inferred; check the local time"],
+  ];
+  for (const version of [
+    "career-score-v1",
+    "career-score-v2",
+    "career-score-v3",
+    "career-score-v4",
+  ]) {
+    responseRows = [
+      upcomingRow({
+        career_assessment: {
+          ...careerAssessment,
+          version,
+          cautions: [
+            ...expected.map(([code]) => code).toReversed(),
+            "hiring_unknown",
+            "role_evidence_limited",
+          ],
+        },
+        registration_status: "open",
+        public_registration_url: "https://luma.com/synthetic-reviewed-event",
+        raw_payload: {
+          restrictions: "PRIVATE COMPANY NAME REQUIREMENT",
+          quote: "PRIVATE ENTRY QUOTE",
+        },
+        content_text: "PRIVATE SOURCE PAGE",
+      }),
+    ];
+    for (const route of ["/", "/career"]) {
+      const { html } = await page(route);
+      const card = html.match(/<article\b[\s\S]*?<\/article>/)?.[0];
+      assert.ok(card);
+      const section = card.match(
+        /<section class="career-attendance"[\s\S]*?<\/section>/,
+      )?.[0];
+      assert.ok(section);
+      const headingId = "attendance-40000000-0000-4000-8000-000000000001";
+      assert.ok(section.includes(`aria-labelledby="${headingId}"`));
+      assert.ok(
+        section.includes(
+          `<h4 id="${headingId}">Attendance &amp; eligibility</h4>`,
+        ),
+      );
+      assert.ok(
+        card.indexOf("Career fit score: 80 out of 100") < card.indexOf(section),
+      );
+      assert.ok(card.indexOf(section) < card.indexOf("Why this room fits"));
+      assert.ok(
+        card.indexOf(section) < card.indexOf("View event &amp; registration"),
+      );
+      let previous = -1;
+      for (const [, label] of expected) {
+        const position = section.indexOf(`<li>${label}</li>`);
+        assert.ok(position > previous, label);
+        previous = position;
+        assert.equal(card.split(`<li>${label}</li>`).length - 1, 1, label);
+      }
+      assert.match(
+        section,
+        /Career fit and open registration do not confirm attendance eligibility/,
+      );
+      assert.doesNotMatch(
+        section,
+        /Hiring opportunities not stated|Role relevance needs checking/,
+      );
+      assert.match(card, /Hiring opportunities not stated/);
+      assert.match(card, /Role relevance needs checking/);
+      assert.match(card, /Registration open/);
+      assert.match(card, /href="https:\/\/luma.com\/synthetic-reviewed-event"/);
+      assert.doesNotMatch(
+        html,
+        /PRIVATE|raw_payload|content_text|source_verification/,
+      );
+      assert.doesNotMatch(
+        card,
+        /You are eligible|You are ineligible|Attendance confirmed/,
+      );
+    }
+  }
+});
+
+test("career cards without attendance cautions still prompt a check without inventing approval", async () => {
+  for (const cautions of [[], ["hiring_unknown"]]) {
+    responseRows = [
+      upcomingRow({
+        career_assessment: { ...careerAssessment, cautions },
+      }),
+    ];
+    const { html } = await page("/career");
+    const section = html.match(
+      /<section class="career-attendance"[\s\S]*?<\/section>/,
+    )?.[0];
+    assert.ok(section);
+    assert.match(
+      section,
+      /Check the listing for current entry requirements and availability/,
+    );
+    assert.doesNotMatch(
+      section,
+      /<ul|Eligibility confirmed|Attendance restrictions apply|Attendance eligibility not confirmed|Hiring opportunities/,
+    );
+    assert.match(html, /Career fit score: 80 out of 100/);
+  }
+});
+
+test("founder-only cards retain their original presentation without a career attendance section", async () => {
+  responseRows = [upcomingRow({ title: "Founder-only attendance regression" })];
+  const { html } = await page("/events");
+  assert.match(html, /Founder-only attendance regression/);
+  assert.match(html, /Recommendation pending/);
+  assert.match(html, /Registration status not listed/);
+  assert.doesNotMatch(
+    html,
+    /career-attendance|Attendance &amp; eligibility|Career fit score/,
+  );
+});
+
 test("career homepage distinguishes an empty career shortlist and retries its own edition", async () => {
   responseRows = [upcomingRow({ title: "Founder-only published listing" })];
   const empty = await page("/");
