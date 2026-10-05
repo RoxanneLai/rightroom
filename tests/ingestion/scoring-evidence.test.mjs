@@ -62,7 +62,7 @@ test("technical workshops get adjacent not direct product credit; platform chat 
   );
   const original = structuredClone(input);
   const result = assess(input);
-  assert.equal(result.version, "career-score-v3");
+  assert.equal(result.version, "career-score-v4");
   assert.equal(result.score, 22.5);
   assert.equal(result.components.role_fit, 22.5);
   assert.equal(result.components.interaction, 0);
@@ -265,13 +265,14 @@ test("all assessment versions remain readable and new review cautions are safe f
     "career-score-v1",
     "career-score-v2",
     "career-score-v3",
+    "career-score-v4",
   ])
     assert.equal(
       careerAssessmentSchema.safeParse({ ...result, version }).success,
       true,
     );
   assert.equal(
-    careerAssessmentSchema.safeParse({ ...result, version: "career-score-v4" })
+    careerAssessmentSchema.safeParse({ ...result, version: "career-score-v5" })
       .success,
     false,
   );
@@ -298,4 +299,187 @@ test("both extraction paths distinguish PM relevance and event interaction; repa
     /without tools, outside knowledge or new facts/,
   );
   assert.match(CAREER_REPAIR_INSTRUCTIONS, /exact quotes verbatim/);
+});
+
+test("ordinary demonstrations and implementation sessions earn only adjacent technical credit", () => {
+  for (const quote of [
+    'See exactly how to wire a database app into cloud dashboards, so "no idea why it is slow" becomes visibility into database health — no custom queries, no guesswork.',
+    "We will explore practical implementation approaches in detailed technical sessions.",
+    "Demo: how to connect a software application to a monitoring dashboard.",
+    "Full day: morning and afternoon technical sessions with hands-on workshops.",
+  ]) {
+    assert.equal(
+      supportedRelevance(fact("direct", quote), "product"),
+      "adjacent",
+      quote,
+    );
+    assert.equal(
+      supportedRelevance(fact("direct", quote), "delivery"),
+      "adjacent",
+      quote,
+    );
+    assert.equal(
+      supportedRelevance(fact("adjacent", quote), "delivery"),
+      "adjacent",
+      quote,
+    );
+  }
+});
+
+test("unrelated negative phrases do not erase PM or technical agenda evidence", () => {
+  for (const quote of [
+    "Product discovery workshop: no prior experience required.",
+    "Learn product management without buying a course.",
+    "Product strategy discussion with no guesswork.",
+    "Product discovery workshop: no product management experience required.",
+  ])
+    assert.equal(
+      supportedRelevance(fact("direct", quote), "product"),
+      "direct",
+      quote,
+    );
+  for (const quote of [
+    "How to deploy cloud software without custom queries.",
+    "Technical workshop with no coding prerequisites.",
+    "Database demonstration: not a sales pitch.",
+  ])
+    assert.equal(
+      supportedRelevance(fact("direct", quote), "delivery"),
+      "adjacent",
+      quote,
+    );
+});
+
+test("direct topic negation and cancelled role sessions still withhold credit", () => {
+  for (const quote of [
+    "No product management discussion is planned.",
+    "This is not a product management workshop.",
+    "The product discovery workshop is cancelled.",
+    "We do not cover product management in this workshop.",
+    "Product discovery discussion. The product discovery discussion isn't offered.",
+  ])
+    assert.equal(
+      supportedRelevance(fact("direct", quote), "product"),
+      null,
+      quote,
+    );
+  for (const quote of [
+    "Software workshops are cancelled.",
+    "Without technical sessions, only a merchandise demo remains.",
+    "Technical sessions won't be offered.",
+  ])
+    assert.equal(
+      supportedRelevance(fact("adjacent", quote), "delivery"),
+      null,
+      quote,
+    );
+});
+
+test("event invitations to informal conversation count without the literal networking keyword", () => {
+  for (const quote of [
+    "Come for the talks, stay for refreshments and small talk that sparks your next idea.",
+    "Join informal conversations after the talk.",
+    "Agenda: informal conversation with practitioners.",
+    "Chat with speakers during the event networking reception.",
+  ])
+    assert.equal(
+      supportedInteraction(fact("networking", quote)),
+      "networking",
+      quote,
+    );
+  for (const quote of [
+    "Small talk.",
+    "A talk about small talk techniques.",
+    "Chat with other attendees before the event starts for small talk.",
+    "Our community offers informal conversation every month.",
+    "Download the app for event networking and small talk.",
+    "Connect with other attendees before the event starts.",
+  ])
+    assert.equal(supportedInteraction(fact("networking", quote)), null, quote);
+});
+
+test("interaction negation is activity-specific and still handles cancelled or absent agendas", () => {
+  for (const quote of [
+    "Agenda: networking reception, no prior experience required.",
+    "Join networking with no coding prerequisites.",
+    "The networking reception includes refreshments but no swag.",
+    "No software experience required. Agenda: informal conversations.",
+    "Networking session: no networking experience required.",
+  ])
+    assert.equal(
+      supportedInteraction(fact("networking", quote)),
+      "networking",
+      quote,
+    );
+  for (const quote of [
+    "No informal conversation is planned for this event.",
+    "Networking opportunities are not offered.",
+    "The networking reception isn't available.",
+    "This event will not include networking.",
+    "The event won't offer small talk.",
+    "Agenda: networking reception. Networking won't be provided.",
+  ])
+    assert.equal(supportedInteraction(fact("networking", quote)), null, quote);
+});
+
+test("Q&A and collaboration retain their weights despite unrelated requirements wording", () => {
+  const input = career(
+    "Product discovery workshop with no prior experience required.",
+  );
+  input.interaction = fact(
+    "qa",
+    "The keynote includes Q&A, no technical background required.",
+  );
+  assert.equal(assess(input).components.interaction, 10);
+  input.interaction = fact(
+    "collaboration",
+    "Workshop: group exercise with no coding prerequisites.",
+  );
+  assert.equal(assess(input).components.interaction, 20);
+  for (const [value, quote] of [
+    ["qa", "Q&A will not be offered after the keynote."],
+    ["collaboration", "The workshop won't include group exercise."],
+  ])
+    assert.equal(supportedInteraction(fact(value, quote)), null);
+});
+
+test("technical demonstrations with conversations still rank below equally accessible direct PM practice", () => {
+  const interaction = "Come for the talks, stay for small talk.";
+  const technical = career(
+    "Technical workshop with no custom queries.",
+    interaction,
+  );
+  const original = structuredClone(technical);
+  const techAssessment = assess(technical);
+  const productAssessment = assess(
+    career("Product discovery workshop.", interaction),
+  );
+  assert.equal(techAssessment.score, 42.5);
+  assert.equal(productAssessment.score, 50);
+  assert.ok(productAssessment.score > techAssessment.score);
+  assert.ok(techAssessment.cautions.includes("role_evidence_limited"));
+  assert.ok(!techAssessment.reasons.includes("direct_product_fit"));
+  assert.deepEqual(technical, original);
+});
+
+test("customer or prototype wording alone cannot invent PM relevance or borrow another quote", () => {
+  const input = career(
+    "From prototype to production: your side project now has paying customers.",
+  );
+  assert.equal(assess(input).components.role_fit, 0);
+  const result = assess(
+    input,
+    "Product discovery workshop. Demo: database application deployment.",
+  );
+  assert.equal(result.components.role_fit, 0);
+  for (const value of [null, "none", "adjacent"])
+    assert.equal(
+      supportedRelevance(fact(value, "Technical workshop."), "product"),
+      value,
+    );
+  input.interaction = fact("networking", "Uncaptured small talk at an event.");
+  assert.throws(
+    () => assessCareer(input, input.product_relevance.quote, event, target),
+    /unsupported_career_evidence/,
+  );
 });

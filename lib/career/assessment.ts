@@ -174,7 +174,7 @@ export function assessCareer(
   if (components.people) cautions.push("participation_not_guaranteed");
   if (founderAccess === "unknown") cautions.push("founders_unknown");
   return careerAssessmentSchema.parse({
-    version: "career-score-v3",
+    version: "career-score-v4",
     profile_version: target.version,
     score: Object.values(components).reduce((sum, value) => sum + value, 0),
     components,

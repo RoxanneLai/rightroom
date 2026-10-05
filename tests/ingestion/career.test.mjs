@@ -247,7 +247,7 @@ test("career events qualify without founders/jobs and keep legacy schema separat
   assert.equal(schemaForProfile("founder").safeParse(c).success, false);
   const draft = normalize(c);
   assert.equal(draft.career_assessment.score, 95);
-  assert.equal(draft.career_assessment.version, "career-score-v3");
+  assert.equal(draft.career_assessment.version, "career-score-v4");
   assert.equal(draft.career_assessment.founderAccess, "not_applicable");
   assert.equal(draft.career_assessment.hiring, null);
   assert.ok(draft.career_assessment.cautions.includes("timezone_inferred_nyc"));
@@ -272,14 +272,14 @@ test("compound preferred domains earn one supported bonus without changing model
   for (const field of ["role_fit", "people", "interaction", "access"])
     assert.equal(after.components[field], before.components[field]);
   assert.deepEqual(c, original);
-  assert.equal(after.version, "career-score-v3");
+  assert.equal(after.version, "career-score-v4");
   assert.equal(
     careerAssessmentSchema.safeParse({ ...after, version: "career-score-v1" })
       .success,
     true,
   );
   assert.equal(
-    careerAssessmentSchema.safeParse({ ...after, version: "career-score-v4" })
+    careerAssessmentSchema.safeParse({ ...after, version: "career-score-v5" })
       .success,
     false,
   );
@@ -834,7 +834,7 @@ test("SQLite career ingestion, safe inspector and stale publication review share
   assert.equal(preview.publicPreview.card.careerAssessment.score, 95);
   assert.equal(
     preview.publicPreview.card.careerAssessment.version,
-    "career-score-v3",
+    "career-score-v4",
   );
   const db = openSqliteDatabase(path);
   // Seed a historical assessment in this isolated fixture; reads must not rescore it.
@@ -937,7 +937,7 @@ test("SQLite stores calibrated assessments and unchanged private facts with revi
     { command: "preview", eventId: source.event_id, sourceId: source.id },
     path,
   );
-  assert.equal(snapshot.event.career_assessment.version, "career-score-v3");
+  assert.equal(snapshot.event.career_assessment.version, "career-score-v4");
   assert.equal(snapshot.event.career_assessment.score, 67.5);
   assert.deepEqual(
     snapshot.sources[0].raw_payload.candidate.career,
