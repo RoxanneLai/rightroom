@@ -461,6 +461,9 @@ export async function runIngestion(
       evidence_kind: "model_web_search_report_with_source_fetch",
       profile: options.profile ?? "founder",
       intent: options.intent ?? "refresh",
+      ...(options.profile === "career"
+        ? { search_focus: options.search_focus ?? "balanced" }
+        : {}),
       profile_version: options.career_target?.version ?? "founder-v1",
       planned_queries:
         options.profile === "career" ? careerSearchPlan(options) : [],

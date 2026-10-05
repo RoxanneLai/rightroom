@@ -157,6 +157,7 @@ export type SearchOptions = {
   profile?: "founder" | "career";
   searches?: number;
   intent?: "refresh" | "expand";
+  search_focus?: "balanced" | "product";
   career_target?: import("../career/profile.ts").CareerTarget;
 };
 

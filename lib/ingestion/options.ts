@@ -13,6 +13,7 @@ const optionsSchema = z
     profile: z.enum(["founder", "career"]).optional(),
     searches: z.number().int().min(1).max(12).optional(),
     intent: z.enum(["refresh", "expand"]).optional(),
+    search_focus: z.enum(["balanced", "product"]).optional(),
     career_target: careerTargetSchema.optional(),
   })
   .strict();
@@ -37,8 +38,12 @@ export function validateSearchOptions(value: unknown): SearchOptions {
   if (!result.success) throw new IngestionError("invalid_search_options");
   if (
     result.data.profile !== "career" &&
-    ((result.data.searches ?? 3) > 3 || result.data.career_target)
+    ((result.data.searches ?? 3) > 3 ||
+      result.data.career_target ||
+      result.data.search_focus !== undefined)
   )
+    throw new IngestionError("invalid_search_options");
+  if (result.data.search_focus === "product" && (result.data.searches ?? 3) > 3)
     throw new IngestionError("invalid_search_options");
   const duration = Date.parse(result.data.to) - Date.parse(result.data.from);
   if (duration <= 0 || duration > 31 * DAY_MS)

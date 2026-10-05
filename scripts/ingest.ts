@@ -53,7 +53,13 @@ function printPlan(
           tools: false,
         },
         location: "New York City",
-        options: { ...options, intent: options.intent ?? "refresh" },
+        options: {
+          ...options,
+          intent: options.intent ?? "refresh",
+          ...(options.profile === "career"
+            ? { search_focus: options.search_focus ?? "balanced" }
+            : {}),
+        },
         discovery_exclusions: discoveryExclusionPlan(options),
         limits: {
           ...API_LIMITS,

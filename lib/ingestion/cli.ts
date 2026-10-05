@@ -12,6 +12,9 @@ export const INGEST_HELP = [
   "                 [--repair-model vendor/model-id] [--repair-effort level]",
   "                 [--profile founder|career] [--searches 1..12] [--career-config path]",
   "                 [--intent refresh|expand]",
+  "                 [--search-focus balanced|product]",
+  "Career only: balanced (default) interleaves families; product uses only the three existing PM query families (1..3 searches).",
+  "Search focus changes research plans, not eligibility, scoring, or publication rules. Planned queries are not verified execution.",
   "Default intent: refresh. Expand excludes up to 50 known/cancelled source identities, prioritizing cancelled sources.",
   "Expand targets new drafts in the chosen window; failed unlinked leads remain eligible. No extra searches or retries.",
   "Default profile: career, with a 30-day window. Use --profile founder for the legacy 14-day startup search.",
@@ -53,6 +56,7 @@ export function parseIngestionArgs(args: string[], now = new Date()) {
         profile: { type: "string" },
         searches: { type: "string" },
         intent: { type: "string" },
+        "search-focus": { type: "string" },
         "career-config": { type: "string" },
         live: { type: "boolean" },
         help: { type: "boolean", short: "h" },
@@ -74,6 +78,12 @@ export function parseIngestionArgs(args: string[], now = new Date()) {
   )
     throw new IngestionError("invalid_cli_arguments");
   const profile = (values.profile ?? "career") as "career" | "founder";
+  if (
+    values["search-focus"] !== undefined &&
+    (profile !== "career" ||
+      !["balanced", "product"].includes(values["search-focus"]))
+  )
+    throw new IngestionError("invalid_cli_arguments");
   if (
     values.intent !== undefined &&
     !["refresh", "expand"].includes(values.intent)
@@ -122,6 +132,9 @@ export function parseIngestionArgs(args: string[], now = new Date()) {
     limit: values.limit === undefined ? defaults.limit : Number(values.limit),
     profile,
     ...(values.intent ? { intent: values.intent } : {}),
+    ...(values["search-focus"]
+      ? { search_focus: values["search-focus"] as "balanced" | "product" }
+      : {}),
     ...(values.searches ? { searches: Number(values.searches) } : {}),
   });
   return {

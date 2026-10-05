@@ -119,6 +119,9 @@ export class SupabaseIngestionRepository implements IngestionRepository {
         search_parameters: {
           ...options,
           intent: options.intent ?? "refresh",
+          ...(options.profile === "career"
+            ? { search_focus: options.search_focus ?? "balanced" }
+            : {}),
           model: this.model,
           effort: this.effort,
           repair_model: this.repairModel,

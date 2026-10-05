@@ -40,7 +40,7 @@ export async function readCareerTarget(
   }
 }
 
-/** Interleaved families; configured queries are plans, not observed tool execution. */
+/** Balanced or PM-only families; planned queries are not observed tool execution. */
 export function careerSearchPlan(options: SearchOptions) {
   const families = [
     [
@@ -86,8 +86,14 @@ export function careerSearchPlan(options: SearchOptions) {
       "software digital product technology talks non-tech employers NY Tech Alliance Tech:NYC",
     ],
   ];
-  return families.slice(0, options.searches ?? 3).map(([family, topic]) => ({
-    family,
-    query: `NYC in-person ${topic}; events from ${options.from} until ${options.to}; roles ${(options.career_target?.primary_roles ?? []).join(", ")}`,
-  }));
+  const selectedFamilies =
+    options.search_focus === "product"
+      ? families.filter(([family]) => family === "product")
+      : families;
+  return selectedFamilies
+    .slice(0, options.searches ?? 3)
+    .map(([family, topic]) => ({
+      family,
+      query: `NYC in-person ${topic}; events from ${options.from} until ${options.to}; roles ${(options.career_target?.primary_roles ?? []).join(", ")}`,
+    }));
 }
