@@ -19,6 +19,7 @@
     "test:dashboard": "node --conditions=react-server --experimental-strip-types --test tests/dashboard/*.test.mjs",
     "test:unit": "node --experimental-strip-types --test tests/events.test.mjs",
     "test:ingestion": "node --conditions=react-server --experimental-strip-types --test tests/ingestion/*.test.mjs",
+    "test:acceptance:offline": "node --conditions=react-server --experimental-strip-types --test tests/ingestion/offline-acceptance.test.mjs",
     "ingest": "node --conditions=react-server --experimental-strip-types scripts/ingest.ts",
     "ingest:evaluate": "node --conditions=react-server --experimental-strip-types scripts/evaluate-ingestion.ts",
     "ingest:replay": "node --conditions=react-server --experimental-strip-types scripts/replay-captures.ts",

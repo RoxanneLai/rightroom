@@ -241,6 +241,10 @@ List and preview are read-only. Cancellation performs one local revision-checked
 
 The inspector reads the selected backend and reports the run's parameters, safe provider diagnostics, provider-reported usage totals, and current identities/linkage for at most 50 sources. SQLite needs no Docker; Supabase inspection uses a read-only local Docker transaction. It never returns research text, source content, raw payloads, credentials, prompts, or reasoning traces. A source touched by a later run reflects its current linkage and last-attempt state, not a historical snapshot.
 
+## Deterministic end-to-end acceptance
+
+`npm run test:acceptance:offline` exercises discovery selection through independent synthetic-page capture, real temporary SQLite persistence, safe inspection, revision-bound review, and published-only dashboard reads. It includes fact-preserving bounded repair and failed-refresh protection, blocks real network transports, reads no API key, and changes no existing database. It is also included in `npm test`. See the [offline acceptance guide](OFFLINE-ACCEPTANCE.md) for cases and limitations; this does not replace a separately authorized live discovery check.
+
 ## Evaluate historical quality offline
 
 Use the read-only SQLite evaluator before making another round of prompt, extraction, or model changes:
