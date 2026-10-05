@@ -17,9 +17,13 @@ export const CAREER_CAUTION_LABELS: Record<
   participation_not_guaranteed: "Advertised participation is not guaranteed",
   founders_unknown: "Startup founder participation not confirmed",
   domain_unknown: "Domain fit not established",
-  interaction_unknown: "Conversation opportunities not stated",
+  interaction_unknown:
+    "Event-specific conversation opportunities not established",
   people_unknown: "Relevant participants not confirmed",
   role_fit_unknown: "Role fit not established",
+  role_evidence_limited: "Role relevance needs checking; score credit limited",
+  interaction_evidence_limited:
+    "Event-specific conversation evidence unclear; no interaction credit",
 };
 export const CAREER_REASON_LABELS: Record<
   CareerAssessment["reasons"][number],

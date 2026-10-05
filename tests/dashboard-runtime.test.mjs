@@ -202,7 +202,7 @@ test("homepage and career alias rank published career assessments without leakin
       title: "Higher career fit example",
       career_assessment: {
         ...assessment,
-        version: "career-score-v2",
+        version: "career-score-v3",
         score: 90,
         components: { ...assessment.components, interaction: 20 },
         reasons: [
@@ -211,6 +211,25 @@ test("homepage and career alias rank published career assessments without leakin
         ],
       },
       networking_score: 0,
+    }),
+    upcomingRow({
+      id: "d9d2e317-b328-421e-8f2c-f9152ee0317e",
+      title: "Limited career evidence example",
+      career_assessment: {
+        ...assessment,
+        version: "career-score-v3",
+        score: 22.5,
+        components: {
+          role_fit: 22.5,
+          people: 0,
+          interaction: 0,
+          domain: 0,
+          access: 0,
+        },
+        reasons: ["adjacent_product_fit"],
+        cautions: ["role_evidence_limited", "interaction_evidence_limited"],
+      },
+      raw_payload: "PRIVATE LIMITED QUOTE",
     }),
     upcomingRow({
       title: "PRIVATE CAREER DRAFT",
@@ -238,6 +257,9 @@ test("homepage and career alias rank published career assessments without leakin
     const { html, headers } = await page(route);
     assert.match(html, /Published career example/);
     assert.match(html, /Higher career fit example/);
+    assert.match(html, /Limited career evidence example/);
+    assert.match(html, /Role relevance needs checking/);
+    assert.match(html, /no interaction credit/);
     assert.ok(
       html.indexOf("Higher career fit example") <
         html.indexOf("Published career example"),
@@ -253,7 +275,7 @@ test("homepage and career alias rank published career assessments without leakin
       html,
       /PRIVATE|Unassessed founder event|Closed career registration/,
     );
-    assert.equal((html.match(/<article\b/g) ?? []).length, 2);
+    assert.equal((html.match(/<article\b/g) ?? []).length, 3);
     assert.match(headers.get("cache-control") ?? "", /no-store/);
   }
   assert.match((await page("/events")).html, /Unassessed founder event/);

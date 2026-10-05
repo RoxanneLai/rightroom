@@ -4,6 +4,10 @@ import type { CareerTarget } from "./profile.ts";
 import type { EventDraft } from "../ingestion/contracts.ts";
 import { IngestionError } from "../ingestion/errors.ts";
 import { matchesPreferredDomain } from "./domain.ts";
+import {
+  supportedInteraction,
+  supportedRelevance,
+} from "./scoring-evidence.ts";
 
 /** Require exact contiguous quotes for every career fact, scoped to this evidence. */
 function checkQuotes(value: unknown, evidence: string): void {
@@ -52,8 +56,8 @@ export function assessCareer(
     event.registration_status === "cancelled"
   )
     throw new IngestionError("ineligible_event");
-  const product = career.product_relevance.value;
-  const delivery = career.delivery_relevance.value;
+  const product = supportedRelevance(career.product_relevance, "product");
+  const delivery = supportedRelevance(career.delivery_relevance, "delivery");
   const role =
     product === "direct"
       ? 1
@@ -95,7 +99,7 @@ export function assessCareer(
         person.role.value,
       ),
   );
-  const interaction = career.interaction.value;
+  const interaction = supportedInteraction(career.interaction);
   const domainMatch = matchesPreferredDomain(
     career.domain,
     target.preferred_domains,
@@ -137,6 +141,14 @@ export function assessCareer(
   if (access) reasons.push("practical_access");
   const cautions: CareerAssessment["cautions"] = [];
   if (
+    product !== career.product_relevance.value ||
+    delivery !== career.delivery_relevance.value
+  )
+    cautions.push("role_evidence_limited");
+  if (!role) cautions.push("role_fit_unknown");
+  if (interaction !== career.interaction.value)
+    cautions.push("interaction_evidence_limited");
+  if (
     Array.isArray(event.normalization_notes) &&
     event.normalization_notes.includes("timezone_inferred_nyc")
   )
@@ -162,7 +174,7 @@ export function assessCareer(
   if (components.people) cautions.push("participation_not_guaranteed");
   if (founderAccess === "unknown") cautions.push("founders_unknown");
   return careerAssessmentSchema.parse({
-    version: "career-score-v2",
+    version: "career-score-v3",
     profile_version: target.version,
     score: Object.values(components).reduce((sum, value) => sum + value, 0),
     components,

@@ -247,7 +247,7 @@ test("career events qualify without founders/jobs and keep legacy schema separat
   assert.equal(schemaForProfile("founder").safeParse(c).success, false);
   const draft = normalize(c);
   assert.equal(draft.career_assessment.score, 95);
-  assert.equal(draft.career_assessment.version, "career-score-v2");
+  assert.equal(draft.career_assessment.version, "career-score-v3");
   assert.equal(draft.career_assessment.founderAccess, "not_applicable");
   assert.equal(draft.career_assessment.hiring, null);
   assert.ok(draft.career_assessment.cautions.includes("timezone_inferred_nyc"));
@@ -272,14 +272,14 @@ test("compound preferred domains earn one supported bonus without changing model
   for (const field of ["role_fit", "people", "interaction", "access"])
     assert.equal(after.components[field], before.components[field]);
   assert.deepEqual(c, original);
-  assert.equal(after.version, "career-score-v2");
+  assert.equal(after.version, "career-score-v3");
   assert.equal(
     careerAssessmentSchema.safeParse({ ...after, version: "career-score-v1" })
       .success,
     true,
   );
   assert.equal(
-    careerAssessmentSchema.safeParse({ ...after, version: "career-score-v3" })
+    careerAssessmentSchema.safeParse({ ...after, version: "career-score-v4" })
       .success,
     false,
   );
@@ -834,7 +834,7 @@ test("SQLite career ingestion, safe inspector and stale publication review share
   assert.equal(preview.publicPreview.card.careerAssessment.score, 95);
   assert.equal(
     preview.publicPreview.card.careerAssessment.version,
-    "career-score-v2",
+    "career-score-v3",
   );
   const db = openSqliteDatabase(path);
   // Seed a historical assessment in this isolated fixture; reads must not rescore it.
@@ -905,6 +905,62 @@ test("SQLite career ingestion, safe inspector and stale publication review share
     now,
   });
   assert.deepEqual(protectedFeed.events[0].careerAssessment, historical);
+});
+
+test("SQLite stores calibrated assessments and unchanged private facts with review warnings", async () => {
+  const { path } = await temporary();
+  const c = careerCandidate();
+  const roleQuote = "Agentic AI and AWS cloud workshop.";
+  const chatQuote = "Chat with attendees in the group chat for networking.";
+  const text = `${evidence} ${roleQuote} ${chatQuote}`;
+  c.career.product_relevance = fact("direct", roleQuote);
+  c.career.interaction = fact("networking", chatQuote);
+  const original = structuredClone(c);
+  const summary = await runIngestion(careerOptions, {
+    repository: repository(path),
+    provider: {
+      async research() {
+        return { report: text, urls: [url], metadata: {} };
+      },
+      async extract() {
+        return { candidates: [c], metadata: {} };
+      },
+    },
+    now: () => now,
+    signal: new AbortController().signal,
+  });
+  assert.equal(summary.events_written, 1);
+  assert.deepEqual(c, original);
+  const inspection = executeSqliteInspection(summary.run_id, path);
+  const source = inspection.sources[0];
+  const snapshot = executeSqliteReview(
+    { command: "preview", eventId: source.event_id, sourceId: source.id },
+    path,
+  );
+  assert.equal(snapshot.event.career_assessment.version, "career-score-v3");
+  assert.equal(snapshot.event.career_assessment.score, 67.5);
+  assert.deepEqual(
+    snapshot.sources[0].raw_payload.candidate.career,
+    original.career,
+  );
+  const preview = buildReviewReport(snapshot, now);
+  assert.deepEqual(preview.blockers, []);
+  assert.match(preview.warnings.join(" "), /Role relevance needs checking/);
+  assert.match(preview.warnings.join(" "), /no interaction credit/);
+  assert.doesNotMatch(
+    JSON.stringify(preview.publicPreview),
+    /Agentic AI|group chat/,
+  );
+  assert.equal(
+    (
+      await loadDashboard({
+        career: true,
+        env: { SQLITE_DATABASE_PATH: path },
+        now,
+      })
+    ).status,
+    "empty",
+  );
 });
 
 test("normalization failures persist bounded diagnostics and keep good evidence", async () => {

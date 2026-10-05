@@ -53,6 +53,14 @@ test("Supabase career reads request career ordering and expose no evidence or un
         networking_score: 1,
       }),
       publishedRow({
+        id: "10000000-0000-4000-8000-000000000003",
+        career_assessment: {
+          ...assessment(40),
+          version: "career-score-v3",
+          cautions: ["role_evidence_limited", "interaction_evidence_limited"],
+        },
+      }),
+      publishedRow({
         publication_status: "draft",
         career_assessment: assessment(95),
         raw_payload: "PRIVATE",
@@ -68,11 +76,11 @@ test("Supabase career reads request career ordering and expose no evidence or un
   assert.equal(result.status, "ready");
   assert.deepEqual(
     result.events.map((event) => event.careerAssessment.score),
-    [30, 20],
+    [40, 30, 20],
   );
   assert.deepEqual(
     result.events.map((event) => event.careerAssessment.version),
-    ["career-score-v2", "career-score-v1"],
+    ["career-score-v3", "career-score-v2", "career-score-v1"],
   );
   assert.doesNotMatch(JSON.stringify(result), /PRIVATE|raw_payload/);
 });
