@@ -16,6 +16,29 @@ The operator preview has no mechanical blockers, but retains eligibility, restri
 
 This documentation follow-up makes no application, model, migration or real-data changes. The inspection and backup comparison used read-only connections; no further paid calls, registrations, outreach or publication occurred. All 225 normal offline tests pass (6 unit, 189 ingestion, 17 dashboard, 13 review), including the eight full-workflow checks in the [offline acceptance pack](OFFLINE-ACCEPTANCE.md). Documentation formatting and `git diff --check` pass. Builds, lint, TypeScript and optional PostgreSQL integration were not rerun for this documentation-only change. Historical checkpoints below describe their original dates and are not current gate-status claims.
 
+## Product acceptance feedback — October 5, 2026
+
+The user reviewed decision cards for the two private career drafts using saved October 1/5 evidence and hypothetical version 4 scores. This was a usefulness/attendance exercise, not a fresh listing, registration or eligibility check.
+
+| Saved draft                      | Hypothetical v4 score | User decision | Stated reason                                                                                   |
+| -------------------------------- | --------------------: | ------------- | ----------------------------------------------------------------------------------------------- |
+| Supabase x Grafana & Friends NYC |                  47.5 | Maybe         | The subject seems relevant to the user's background.                                            |
+| Agentic AI Modernization on AWS  |                    25 | No            | A company name is required; the user is unsure whether an unaffiliated job seeker could attend. |
+
+These responses are consistent with the hypothetical relative order, but the user did not explicitly choose an ordering or establish that the numerical scores are calibrated. No preference between practitioner conversations, PM contacts and advertised hiring was supplied. Two technical events without a real direct-PM positive control cannot validate the broader ranking. Historical stored scores and their checkpoint descriptions remain unchanged.
+
+The company-name requirement creates attendance uncertainty; it does not establish exclusion. The product lesson is to distinguish career relevance from practical attendance eligibility: a relevant room can still be a poor choice for this user when access is unclear. This is not a new hard filter, evidence of ineligibility, or permission to invent eligibility or change scoring weights.
+
+### Career-feed attendance visibility check
+
+Static inspection of `components/EventCard.tsx`, `components/CareerSummary.tsx`, `lib/career/display.ts` and `app/globals.css` found that the score is prominent at the card heading. Eligibility, host-approval, waitlist, restriction and prerequisite warnings already render from fixed assessment cautions, but they appear together with other unknowns after the score breakdown, founder-access text and hiring text. There is no separately headed attendance section near the score or registration action. Existing labels accurately distinguish unknown eligibility from required approval and do not claim that uncertain applicants are ineligible.
+
+The public assessment exposes fixed caution codes, not private restriction values or source quotes. Consequently the card can say attendance restrictions apply, but cannot explain the company-name/photo-ID requirement from those codes alone. Public registration status is also separate from attendance eligibility: open registration is not a guarantee that this user can attend. Both reviewed events are still private drafts, so this is a component/data-contract inspection, not a claim that their records were visible in the live feed or a visual usability test.
+
+Recommended next increment, subject to separate approval: give existing attendance-related cautions a clearly headed, accessible group near the fit score, distinct from relevance and evidence-confidence explanations. Preserve the fixed-label public boundary, unknown values, registration link, historical assessments and human publication approval. Explain that eligibility needs confirmation rather than declaring exclusion. Showing specific restriction details would require a separately designed, validated and explicitly reviewed public projection; do not copy private evidence into cards. This review does not authorize either implementation.
+
+This follow-up changes documentation only. All 17 offline dashboard tests, documentation formatting and `git diff --check` passed. Builds, runtime rendering, lint, TypeScript and real PostgreSQL integration were not rerun for this documentation-only change. No paid calls, credential reads, fresh website requests, existing database updates, rescoring, registration, publication or branch merge occurred. User feedback is not approval for any of those actions.
+
 ## Earlier live checkpoint — October 1, 2026
 
 The bounded fresh-window career pilot passed in run `1fea9bd8-b4b8-4784-89d0-f1a7243b7540`: window `2026-10-01T23:27:14.227Z` through `2026-10-15T23:27:14.227Z`, three search slots, and a three-source cap. Both existing sources were captured successfully and both extracted candidates were canonical, schema-valid and source-matched. One new private draft was written; the already published FINOS event was protected. The run completed in 27.341 seconds with no errors, retries or repair request. Two Luna/medium requests reported $0.02819419 combined cost; billing remains unverified and search execution counters were not reported.
