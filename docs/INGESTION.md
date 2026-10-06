@@ -16,6 +16,8 @@ Read-only inspection reproduced the failures from untruncated canonical scalar s
 
 ## What happens in one run
 
+For the controlled PM-focused evaluation, `npm run ingest:pm:acceptance` is free by default. Its separate `--preflight`/`--live` modes reserve conservative whole-attempt costs before credentials or database writes, with no retries or publication. The currently examined Luna envelope exceeds its fixed $0.15 ceiling, so it stops rather than treating average historical costs as a spending guarantee. This does not retrofit dollar budgeting into ordinary `npm run ingest -- --live`. See [budget-checked PM acceptance](PM-DISCOVERY-PREPARATION.md#budget-checked-terminal-runner).
+
 Career research supports opt-in `--search-focus product` (one to three search slots) alongside default `balanced` (one to twelve). It reuses the three existing product-community/PM-practice families rather than the default interleaving with technology and finance. Focus is recorded in plans, both storage backends' search parameters and private run/research metadata; historical options without focus stay balanced. Founder mode rejects either focus flag. This changes research priorities, not candidate validation, scores, tools, retry limits or publication rules. Planned queries remain unverified execution. See [the free PM-focused preparation](PM-DISCOVERY-PREPARATION.md).
 
 1. Validate the search dates and result limit. In live mode, reject a search start more than 15 minutes old before reading credentials, contacting the database, or making a paid request; then create a search-run record.

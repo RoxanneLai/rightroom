@@ -21,6 +21,7 @@
     "test:ingestion": "node --conditions=react-server --experimental-strip-types --test tests/ingestion/*.test.mjs",
     "test:acceptance:offline": "node --conditions=react-server --experimental-strip-types --test tests/ingestion/offline-acceptance.test.mjs",
     "ingest": "node --conditions=react-server --experimental-strip-types scripts/ingest.ts",
+    "ingest:pm:acceptance": "node --conditions=react-server --experimental-strip-types scripts/run-pm-discovery.ts",
     "ingest:evaluate": "node --conditions=react-server --experimental-strip-types scripts/evaluate-ingestion.ts",
     "ingest:replay": "node --conditions=react-server --experimental-strip-types scripts/replay-captures.ts",
     "ingest:inspect": "node --conditions=react-server --experimental-strip-types scripts/inspect-ingestion.ts",
