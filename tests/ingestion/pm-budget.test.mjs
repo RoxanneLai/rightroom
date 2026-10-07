@@ -414,6 +414,20 @@ test("dated full-context Luna example reserves exactly $3.2466 and still refuses
   );
 });
 
+test("shrinking tool-free phases cannot bypass the hosted research reservation", () => {
+  const value = acceptanceBudgetEnvelope(tieredLunaCatalog());
+  assert.ok(value.reservations_usd.research > PM_BUDGET_USD);
+  const forged = {
+    ...value,
+    maximum_usd: 0.15,
+    reservations_usd: { research: 0.15, extraction: 0, repair: 0 },
+  };
+  assert.throws(
+    () => acceptanceTransport(forged, () => assert.fail("no paid transport")),
+    /budget_envelope_invalid/,
+  );
+});
+
 test("unknown, missing and malformed pricing or capabilities fail closed", () => {
   for (const change of [
     (m) => {
@@ -596,6 +610,9 @@ test("guarded requests preserve model, effort, tool-free schemas and disable fal
 test("changed request bounds, plugins, router models, traces and malformed JSON never reach transport", async () => {
   for (const overrides of [
     { plugins: [{ id: "web" }] },
+    {
+      stop_server_tools_when: [{ type: "max_cost", max_cost_in_dollars: 0.01 }],
+    },
     { model: "openrouter/auto" },
     { max_tokens: 99999 },
     { provider: { allow_fallbacks: true, require_parameters: true } },
