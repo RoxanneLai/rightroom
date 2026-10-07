@@ -69,6 +69,29 @@ const syntheticCatalog = () => ({
   pricing: { prompt: "0.0000001", completion: "0.0000006" },
 });
 const envelope = () => acceptanceBudgetEnvelope(syntheticCatalog());
+// Dated illustrative prices; this fixture never queries a live catalog.
+function tieredLunaCatalog() {
+  return {
+    ...syntheticCatalog(),
+    context_length: 1_050_000,
+    pricing: {
+      prompt: "0.0000002",
+      completion: "0.0000012",
+      input_cache_read: "0.00000002",
+      input_cache_write: "0.00000025",
+      overrides: [
+        {
+          min_prompt_tokens: 272000,
+          prompt: "0.0000004",
+          completion: "0.0000018",
+          input_cache_read: "0.00000004",
+          input_cache_write: "0.0000005",
+        },
+      ],
+    },
+  };
+}
+
 const response = (content = "{}", cost = 0.001, citations = []) =>
   new Response(
     JSON.stringify({
@@ -318,8 +341,9 @@ test("whole-attempt budget reserves all full contexts, continuations, outputs an
   );
 });
 
-test("higher tiers and cache-write surcharges cannot hide behind cheapest catalog prices", () => {
+test("higher tiers and full cache-write rates cannot hide behind cheapest catalog prices", () => {
   const model = syntheticCatalog();
+  model.context_length = 32768;
   model.pricing.overrides = [
     {
       min_prompt_tokens: 272000,
@@ -329,10 +353,63 @@ test("higher tiers and cache-write surcharges cannot hide behind cheapest catalo
     },
   ];
   const value = acceptanceBudgetEnvelope(model);
-  assert.equal(value.input_usd_per_token, 0.0000009);
+  assert.equal(value.input_usd_per_token, 0.0000005);
   assert.equal(value.output_usd_per_token, 0.0000018);
   assert.throws(
     () => assertAcceptanceBudget(value),
+    /acceptance_budget_exceeded/,
+  );
+});
+
+test("ordinary, cache-read and cache-write rates are alternatives, including inherited tiers", () => {
+  for (const [pricing, expected] of [
+    [{}, 0.0000001],
+    [{ input_cache_read: "0", input_cache_write: "0.00000005" }, 0.0000001],
+    [{ input_cache_write: "0.00000025" }, 0.00000025],
+    [
+      { input_cache_read: "0.0000003", input_cache_write: "0.00000025" },
+      0.0000003,
+    ],
+    [
+      { input_cache_read: "0.0000003", overrides: [{ prompt: "0.0000002" }] },
+      0.0000003,
+    ],
+    [
+      { input_cache_write: "0.00000025", overrides: [{ prompt: "0.0000004" }] },
+      0.0000004,
+    ],
+  ]) {
+    const model = syntheticCatalog();
+    Object.assign(model.pricing, pricing);
+    const value = acceptanceBudgetEnvelope(model);
+    assert.equal(value.input_usd_per_token, expected);
+    // Any disjoint mixture is bounded without charging a token twice.
+    for (const tier of [model.pricing, ...(model.pricing.overrides ?? [])]) {
+      const prompt = Number(tier.prompt ?? model.pricing.prompt);
+      const read = Number(
+        tier.input_cache_read ?? model.pricing.input_cache_read ?? 0,
+      );
+      const write = Number(
+        tier.input_cache_write ?? model.pricing.input_cache_write ?? 0,
+      );
+      assert.ok(100 * prompt + 200 * read + 300 * write <= 600 * expected);
+    }
+  }
+});
+
+test("dated full-context Luna example reserves exactly $3.2466 and still refuses transport", () => {
+  const value = acceptanceBudgetEnvelope(tieredLunaCatalog());
+  assert.equal(value.prompt_usd_per_token, 0.0000004);
+  assert.equal(value.input_usd_per_token, 0.0000005);
+  assert.equal(value.output_usd_per_token, 0.0000018);
+  assert.deepEqual(value.reservations_usd, {
+    research: 2.1642,
+    extraction: 0.5466,
+    repair: 0.5358,
+  });
+  assert.equal(value.maximum_usd, 3.2466);
+  assert.throws(
+    () => acceptanceTransport(value, () => assert.fail("no paid transport")),
     /acceptance_budget_exceeded/,
   );
 });
@@ -363,6 +440,16 @@ test("unknown, missing and malformed pricing or capabilities fail closed", () =>
     (m) => {
       m.pricing.overrides = [{ unrecognized_charge: 1 }];
     },
+    ...[
+      "prompt",
+      "completion",
+      "input_cache_read",
+      "input_cache_write",
+    ].flatMap((name) =>
+      [null, "", -1, NaN, Infinity].map((value) => (m) => {
+        m.pricing.overrides = [{ [name]: value }];
+      }),
+    ),
     (m) => {
       m.reasoning.supported_efforts = ["low"];
     },
@@ -410,8 +497,7 @@ test("public preflight is GET-only, rejects failures safely and never reads a cr
 test("over-budget live preflight stops before credential access, backup or database creation", async () => {
   const dir = await temporaryDirectory();
   const output = [];
-  const model = syntheticCatalog();
-  model.context_length = 1_050_000;
+  const model = tieredLunaCatalog();
   let calls = 0;
   await assert.rejects(
     runPmAcceptance(
@@ -450,6 +536,10 @@ test("over-budget live preflight stops before credential access, backup or datab
     JSON.parse(await readFile(join(artifacts, "stopped.json"), "utf8")).error,
     "acceptance_budget_exceeded",
   );
+  const budget = JSON.parse(
+    await readFile(join(artifacts, "budget.json"), "utf8"),
+  );
+  assert.equal(budget.envelope.maximum_usd, 3.2466);
 });
 
 test("key checks reject unavailable and expired access without mistaking limits for a guarantee", () => {
@@ -588,6 +678,9 @@ test("envelopes are deeply frozen and malformed or inconsistent reservations fai
       v.input_usd_per_token = 0;
     },
     (v) => {
+      v.input_usd_per_token = 1.1;
+    },
+    (v) => {
       v.context_tokens = 0;
     },
     (v) => {
@@ -668,7 +761,7 @@ test("routing caps advertised prompt separately from conservative cache-write in
   ];
   const value = acceptanceBudgetEnvelope(model);
   assert.equal(value.prompt_usd_per_token, 0.0000002);
-  assert.equal(value.input_usd_per_token, 0.0000005);
+  assert.equal(value.input_usd_per_token, 0.0000003);
   let body;
   await invoke(
     acceptanceTransport(value, async (_url, init) => {

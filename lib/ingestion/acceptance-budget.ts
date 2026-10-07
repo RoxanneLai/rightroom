@@ -60,7 +60,7 @@ const envelopeSchema = z
     model: z.literal(PM_MODEL),
     context_tokens: z.number().int().positive().max(10_000_000),
     prompt_usd_per_token: safeAmount.max(1),
-    input_usd_per_token: safeAmount.max(2),
+    input_usd_per_token: safeAmount.max(1),
     output_usd_per_token: safeAmount.max(1),
     maximum_usd: safeAmount,
     reservations_usd: z
@@ -190,19 +190,30 @@ export function acceptanceBudgetEnvelope(
       throw new IngestionError("budget_unknown_pricing");
     if (tier.request !== undefined && rate(tier.request) !== 0)
       throw new IngestionError("budget_request_fee_unsupported");
-    const prompt = rate(tier.prompt ?? model.pricing.prompt);
+    const prompt = rate(
+      tier.prompt === undefined ? model.pricing.prompt : tier.prompt,
+    );
     promptMaximum = Math.max(promptMaximum, prompt);
     const write = rate(
-      tier.input_cache_write ?? model.pricing.input_cache_write ?? 0,
+      tier.input_cache_write === undefined
+        ? (model.pricing.input_cache_write ?? 0)
+        : tier.input_cache_write,
     );
     const read = rate(
-      tier.input_cache_read ?? model.pricing.input_cache_read ?? 0,
+      tier.input_cache_read === undefined
+        ? (model.pricing.input_cache_read ?? 0)
+        : tier.input_cache_read,
     );
-    // Include a possible cache-write surcharge rather than assuming discounted input.
-    input = Math.max(input, prompt + write, read);
+    // Pinned Luna bills ordinary/read/write token categories at alternative rates.
+    // Reserve the highest full rate, without assuming cache hits or adding rates.
+    input = Math.max(input, prompt, write, read);
     output = Math.max(
       output,
-      rate(tier.completion ?? model.pricing.completion),
+      rate(
+        tier.completion === undefined
+          ? model.pricing.completion
+          : tier.completion,
+      ),
     );
   }
   return freezeEnvelope({
