@@ -14,7 +14,7 @@ _Screenshot of the career sample edition. Events, people, scores, and availabili
 
 **Product decisions.** Start with a focused NYC product-management and technical-delivery profile. Rank events using explicit evidence for role fit, relevant people, interaction, domain fit, and practical access; show reasons and uncertainty rather than an unexplained score. Capture original listing text, reject incomplete or conflicting candidates, and require human review before publishing. Keep the default experience local-first with SQLite, no Docker, and a separate credential-free sample edition.
 
-**Result today.** A working career-first dashboard, configurable discovery pipeline, private draft review, stale-safe publication, and source-linked event cards. Live collection has produced drafts, and a manually checked career lead has been recovered and explicitly published. The code is covered by 290 deterministic offline tests plus production-page/runtime checks. The October 5 career expansion pilot produced one new private draft with canonical extraction and no repair. New scores conservatively limit weak role/networking evidence, with review warnings and contextual handling of technical demonstrations and informal conversation; repeatable discovery quality and ranking usefulness remain under evaluation. No user-impact or job-placement results are claimed.
+**Result today.** A working career-first dashboard with browser-local attendance choices, configurable discovery pipeline, private draft review, stale-safe publication, and source-linked event cards. Live collection has produced drafts, and a manually checked career lead has been recovered and explicitly published. The code is covered by 304 deterministic offline tests plus production-page/runtime checks. The October 5 career expansion pilot produced one new private draft with canonical extraction and no repair. New scores conservatively limit weak role/networking evidence, with review warnings and contextual handling of technical demonstrations and informal conversation; repeatable discovery quality and ranking usefulness remain under evaluation. No user-impact or job-placement results are claimed.
 
 **My contribution.** Roxanne defined the user problem, directed the shift from startup networking to career-event discovery, prioritized features and safeguards, and guided iterative implementation and validation with AI coding assistants. The code was developed through that AI-assisted collaboration.
 
@@ -69,6 +69,8 @@ npm run dev
 Open http://localhost:3000.
 
 For the credential-free showcase, open http://localhost:3000/sample/career. No hosted demo is currently provided.
+
+Mark cards Interested, Maybe or Not for me, then filter by your choices. Preferences stay in your browser; sample choices are separate from published ones. This is not an RSVP or a change to ranking. See [personal attendance choices](docs/ATTENDANCE-SHORTLIST.md) for storage limits, reset and privacy details.
 
 No database configuration is needed for the default SQLite dashboard. Its persistent ignored file is created automatically. No service-role key or OpenRouter key is needed for page loads. A new database is intentionally empty; open `/sample/career` to see the career demo. Starting the page does not run discovery or publish anything.
 
@@ -136,6 +138,7 @@ This preserves the latest source snapshot and its original discovery-run attribu
 | `lib/types.ts`               | Original fixture contract and shared categories                                        |
 | `lib/mock-events.ts`         | Fictional fixtures used only by the sample edition                                     |
 | `lib/dashboard/`             | Server-only reads, validation, public card contract, and sample adapter                |
+| `lib/attendance/`            | Browser-only preference storage, strict validation and order-preserving filters        |
 | `lib/storage/`               | Backend selection, SQLite schema, and explicit Supabase import                         |
 | `lib/review/`                | Local operator CLI, evidence review, public preview, and explicit publication          |
 | `lib/career/`                | Target profile, strict evidence, explainable career assessment, and fictional examples |

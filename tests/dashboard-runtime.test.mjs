@@ -143,6 +143,27 @@ test("production cards expose reviewed registration links without leaking privat
   assert.doesNotMatch(html, /secret=private/);
 });
 
+test("published personal controls retain only server-projected events and never write on page load", async () => {
+  responseRows = [
+    upcomingRow({
+      title: "Public preference example",
+      raw_payload: "PRIVATE PREFERENCE EVIDENCE",
+    }),
+  ];
+  const before = databaseCalls;
+  const { html } = await page();
+  assert.equal(databaseCalls, before + 1);
+  assert.match(html, /Public preference example/);
+  assert.match(html, /My interest/);
+  assert.match(html, /Not an RSVP/);
+  assert.match(html.replace(/<!--[\s\S]*?-->/g, ""), /All events \(1\)/);
+  assert.doesNotMatch(
+    html,
+    /PRIVATE PREFERENCE EVIDENCE|Sample choices are separate/,
+  );
+  assert.equal((html.match(/<article\b/g) ?? []).length, 1);
+});
+
 test("production route renders fresh published records and never exposes private fields", async () => {
   responseRows = [
     upcomingRow({

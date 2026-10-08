@@ -58,3 +58,24 @@ test("career sample is clearly fictional and explains scores, unknowns and cauti
     /<a\b(?=[^>]*href="\/")(?=[^>]*class="edition-link")[^>]*>/,
   );
 });
+
+test("personal choices render with safe hydration defaults while complete sample cards remain server-visible", async () => {
+  const html = await readFile(
+    new URL("../.next/server/app/sample/career.html", import.meta.url),
+    "utf8",
+  );
+  const cards = html.match(/<article\b[\s\S]*?<\/article>/g) ?? [];
+  assert.equal(cards.length, 3);
+  for (const card of cards) {
+    assert.match(card, /My interest/);
+    assert.match(card, /Not an RSVP/);
+    assert.equal((card.match(/aria-pressed="false"/g) ?? []).length, 3);
+    assert.equal((card.match(/<button\b[^>]*disabled/g) ?? []).length, 3);
+  }
+  const visibleHtml = html.replace(/<!--[\s\S]*?-->/g, "");
+  assert.match(visibleHtml, /All events \(3\)/);
+  assert.match(visibleHtml, /Original ranking retained/);
+  assert.match(html, /Sample choices are separate from published events/);
+  assert.match(html, /<noscript>[\s\S]*All events remain visible/);
+  assert.match(html, /events available/);
+});

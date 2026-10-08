@@ -375,6 +375,104 @@ h1 > span {
   padding: 0;
   margin: 0;
 }
+.personal-shortlist {
+  padding: 16px 18px;
+  margin-bottom: 18px;
+  background: #f0f3e9;
+  border: 1px solid #dce1d7;
+  border-radius: 8px;
+}
+.personal-filter-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+}
+.personal-filter-row label {
+  font-weight: 600;
+}
+.personal-filter-row select,
+.personal-shortlist button,
+.filtered-empty button,
+.interest-buttons button {
+  min-height: 44px;
+  padding: 9px 12px;
+  border: 1px solid #9ba991;
+  border-radius: 6px;
+  background: #fff;
+  color: #244138;
+  font: inherit;
+  cursor: pointer;
+}
+.personal-filter-row select:focus-visible {
+  outline: 3px solid #567128;
+  outline-offset: 3px;
+}
+.personal-shortlist button {
+  font-size: 12px;
+}
+.clear-choices {
+  margin-left: auto;
+}
+.preference-notice,
+.filtered-count,
+.attendance-choice p {
+  margin-top: 9px;
+  color: #53625b;
+  font-size: 12px;
+  line-height: 1.6;
+}
+.filtered-count {
+  color: #244138;
+}
+.clear-confirmation {
+  margin-top: 12px;
+}
+.clear-confirmation p {
+  margin-bottom: 10px;
+  font-size: 13px;
+}
+.clear-confirmation button + button {
+  margin-left: 8px;
+}
+.attendance-choice {
+  margin: 0;
+  padding: 14px 25px 18px;
+  border: 0;
+  border-top: 1px solid #e2e6dc;
+  background: #fafbf6;
+}
+.attendance-choice legend {
+  float: left;
+  width: 100%;
+  padding: 0;
+  margin-bottom: 9px;
+  font-size: 12px;
+  font-weight: 600;
+}
+.interest-buttons {
+  clear: both;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.interest-buttons button {
+  font-size: 12px;
+}
+.interest-buttons button[aria-pressed="true"] {
+  background: #244138;
+  border-color: #244138;
+  color: #fff;
+}
+.interest-buttons button:disabled,
+.personal-filter-row select:disabled {
+  cursor: wait;
+  opacity: 0.6;
+}
+.filtered-empty button {
+  margin-top: 16px;
+}
 .event-card {
   background: #fff;
   border: 1px solid #dce1d7;

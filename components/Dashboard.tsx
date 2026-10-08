@@ -10,6 +10,10 @@ import {
 import { EventCard } from "@/components/EventCard";
 import type { DashboardResult } from "@/lib/dashboard/types";
 import { DashboardState } from "@/components/DashboardState";
+import {
+  AttendanceChoice,
+  PersonalShortlist,
+} from "@/components/PersonalShortlist";
 
 export function Dashboard({
   result,
@@ -29,6 +33,11 @@ export function Dashboard({
     (event) => event.priceAmountCents === 0 && event.currencyCode !== null,
   ).length;
   const countsKnown = result.status === "ready" || result.status === "empty";
+  const attendanceScope = sample
+    ? career
+      ? "sample-career"
+      : "sample-founder"
+    : "published";
   const count = (value: number) =>
     countsKnown ? value.toString().padStart(2, "0") : "—";
 
@@ -160,7 +169,7 @@ export function Dashboard({
         >
           <div>
             <strong>{count(events.length)}</strong>
-            <span>events shown</span>
+            <span>events available</span>
           </div>
           <div>
             <strong>{count(sample && !career ? newCount : scoredCount)}</strong>
@@ -208,15 +217,21 @@ export function Dashboard({
                     : "Score ↓ · unscored by date"}
               </span>
             </div>
-            {result.status === "ready" ? (
+            {result.status === "ready" || result.status === "empty" ? (
               <>
-                <ol className="event-list">
-                  {events.map((event, index) => (
-                    <li key={event.id}>
-                      <EventCard event={event} rank={index + 1} />
-                    </li>
-                  ))}
-                </ol>
+                <PersonalShortlist
+                  key={attendanceScope}
+                  scope={attendanceScope}
+                  items={events.map((event, index) => ({
+                    id: event.id,
+                    content: (
+                      <EventCard event={event} rank={index + 1}>
+                        <AttendanceChoice eventId={event.id} />
+                      </EventCard>
+                    ),
+                  }))}
+                  emptyState={<DashboardState status="empty" career={career} />}
+                />
                 {result.hasMore && (
                   <p className="feed-limit">
                     Showing the top 50 events in the next 30 days.

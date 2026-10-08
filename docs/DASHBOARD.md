@@ -14,6 +14,8 @@ After SQLite's schema initialization, page loads only read events: they never ru
 
 An empty career shortlist can coexist with published founder-only events. Its explicit “Browse all published events” link opens `/events`; no broader records are silently substituted. Retry and sample links stay in their respective edition. The career sample returns to `/`, while the original startup sample returns to `/events`.
 
+Cards also support a [browser-local personal attendance shortlist](ATTENDANCE-SHORTLIST.md): Interested, Maybe, Not for me, and filters for those choices. This does not RSVP, change scores, publish anything or write database rows. Published views share choices; each fictional sample keeps separate preferences. Only currently loaded server-projected events can appear, and storage failures leave the feed readable.
+
 ## Start with SQLite
 
 No database credentials or separate server are required:

@@ -4,6 +4,7 @@ import { formatEventSchedule, formatStoredPrice } from "@/lib/events";
 import type { DashboardEvent } from "@/lib/dashboard/types";
 import { CareerSummary } from "@/components/CareerSummary";
 import { CareerAttendance } from "@/components/CareerAttendance";
+import type { ReactNode } from "react";
 
 const registrationLabels = {
   open: "Registration open",
@@ -17,9 +18,11 @@ const registrationLabels = {
 export function EventCard({
   event,
   rank,
+  children,
 }: {
   event: DashboardEvent;
   rank: number;
+  children?: ReactNode;
 }) {
   const location = [event.venue, event.neighborhood, event.borough]
     .filter(Boolean)
@@ -148,6 +151,7 @@ export function EventCard({
           </span>
         )}
       </div>
+      {children}
     </article>
   );
 }
