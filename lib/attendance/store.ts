@@ -25,6 +25,15 @@ export const INITIAL_ATTENDANCE: AttendanceSnapshot = Object.freeze({
   persistence: "loading",
 });
 
+/** A failed clear must remain retryable even after choices disappear in memory. */
+export function canClearAttendance(snapshot: AttendanceSnapshot): boolean {
+  return (
+    snapshot.choices.length > 0 ||
+    snapshot.persistence === "invalid" ||
+    snapshot.persistence === "clear_failed"
+  );
+}
+
 /** Isolated browser preferences: no storage access during construction or SSR. */
 export function createAttendanceStore(
   scope: AttendanceScope,
@@ -44,7 +53,14 @@ export function createAttendanceStore(
     let choices = pendingClear
       ? (Object.freeze([]) as readonly Choice[])
       : saved;
+    // Apply removals before additions so a temporary full list cannot reject
+    // a merge whose final contents still fit the same entry limit.
     for (const [id, interest] of pending) {
+      if (interest === null)
+        choices = Object.freeze(choices.filter((choice) => choice.id !== id));
+    }
+    for (const [id, interest] of pending) {
+      if (interest === null) continue;
       const updated = updateChoices(choices, id, interest);
       if (!updated) return null;
       choices = updated;

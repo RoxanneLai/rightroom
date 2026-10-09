@@ -2,6 +2,7 @@
 
 import {
   createContext,
+  useCallback,
   useContext,
   useId,
   useMemo,
@@ -10,7 +11,11 @@ import {
   useSyncExternalStore,
 } from "react";
 import type { ReactNode } from "react";
-import { createAttendanceStore } from "@/lib/attendance/store";
+import {
+  canClearAttendance,
+  createAttendanceStore,
+} from "@/lib/attendance/store";
+import { restoreFilteredFocus } from "@/lib/attendance/focus";
 import type { AttendanceSnapshot } from "@/lib/attendance/store";
 import {
   INTEREST_LABELS,
@@ -103,15 +108,28 @@ export function PersonalShortlist({
   emptyState?: ReactNode;
 }) {
   const store = useMemo(() => browserStore(scope), [scope]);
-  const snapshot = useSyncExternalStore(
-    store.subscribe,
-    store.getSnapshot,
-    store.getServerSnapshot,
-  );
   const [filter, setFilter] = useState<InterestFilter>("all");
   const [confirmClear, setConfirmClear] = useState(false);
   const filterId = useId();
   const filterRef = useRef<HTMLSelectElement>(null);
+  const subscribe = useCallback(
+    (notify: () => void) =>
+      store.subscribe(() => {
+        restoreFilteredFocus(
+          document.activeElement,
+          filterRef.current,
+          filter,
+          store.getSnapshot().choices,
+        );
+        notify();
+      }),
+    [store, filter],
+  );
+  const snapshot = useSyncExternalStore(
+    subscribe,
+    store.getSnapshot,
+    store.getServerSnapshot,
+  );
   const visible = items.filter(({ id }) =>
     matchesInterest(id, filter, snapshot.choices),
   );
@@ -153,8 +171,7 @@ export function PersonalShortlist({
               </option>
             ))}
           </select>
-          {(snapshot.choices.length > 0 ||
-            snapshot.persistence === "invalid") && (
+          {canClearAttendance(snapshot) && (
             <button
               type="button"
               className="clear-choices"
@@ -224,7 +241,9 @@ export function PersonalShortlist({
       ) : (
         <ol className="event-list">
           {visible.map(({ id, content }) => (
-            <li key={id}>{content}</li>
+            <li key={id} data-attendance-event={id}>
+              {content}
+            </li>
           ))}
         </ol>
       )}

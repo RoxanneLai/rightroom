@@ -12,8 +12,10 @@ import {
 } from "../../lib/attendance/preferences.ts";
 import {
   createAttendanceStore,
+  canClearAttendance,
   INITIAL_ATTENDANCE,
 } from "../../lib/attendance/store.ts";
+import { restoreFilteredFocus } from "../../lib/attendance/focus.ts";
 
 function browser() {
   const data = new Map();
@@ -365,4 +367,133 @@ test("an unsaved decision cannot evict a newer tab's full list during reconcilia
     { id: "pending-event", interest: "maybe" },
   ]);
   unsubscribe();
+});
+
+test("pending removals free capacity before pending additions when reconciling another tab", () => {
+  const state = browser();
+  const key = attendanceStorageKey("published");
+  const original = Array.from({ length: 499 }, (_, index) => ({
+    id: `saved-${index}`,
+    interest: "maybe",
+  }));
+  state.data.set(key, serializeChoices(original));
+  const { store, unsubscribe } = mount("published", state);
+  state.blockWrites(true);
+  store.choose("pending-new", "interested");
+  store.choose("saved-0", null);
+  const latest = serializeChoices([
+    ...original,
+    { id: "other-tab-new", interest: "maybe" },
+  ]);
+  state.data.set(key, latest);
+  state.event(key);
+  assert.equal(store.getSnapshot().persistence, "unavailable");
+  assert.equal(store.getSnapshot().choices.length, 500);
+  assert.equal(
+    store.getSnapshot().choices.some(({ id }) => id === "saved-0"),
+    false,
+  );
+  assert.equal(
+    store.getSnapshot().choices.some(({ id }) => id === "other-tab-new"),
+    true,
+  );
+  assert.equal(state.data.get(key), latest);
+  state.blockWrites(false);
+  store.choose("saved-1", "interested");
+  assert.equal(store.getSnapshot().persistence, "available");
+  assert.equal(parseChoices(state.data.get(key)).length, 500);
+  assert.equal(
+    parseChoices(state.data.get(key)).some(({ id }) => id === "pending-new"),
+    true,
+  );
+  unsubscribe();
+});
+
+test("expired saved IDs cannot add cards or inflate current-feed choice counts", () => {
+  const choices = [{ id: "expired-event", interest: "interested" }];
+  const current = ["current-1", "current-2"];
+  assert.deepEqual(
+    current.filter((id) => matchesInterest(id, "all", choices)),
+    current,
+  );
+  assert.deepEqual(
+    current.filter((id) => matchesInterest(id, "interested", choices)),
+    [],
+  );
+  assert.deepEqual(
+    current.filter((id) => matchesInterest(id, "undecided", choices)),
+    current,
+  );
+  const state = browser();
+  state.data.set(attendanceStorageKey("published"), serializeChoices(choices));
+  const { store, unsubscribe } = mount("published", state);
+  assert.deepEqual(store.getSnapshot().choices, choices);
+  assert.equal(
+    state.calls.some(([action]) => action !== "get"),
+    false,
+  );
+  store.clear();
+  assert.equal(state.data.has(attendanceStorageKey("published")), false);
+  unsubscribe();
+});
+
+test("failed clears remain retryable with no in-memory choices and recover without an extra decision", () => {
+  const { store, state, unsubscribe } = mount();
+  assert.equal(canClearAttendance(store.getSnapshot()), false);
+  store.choose("event-1", "maybe");
+  state.blockWrites(true);
+  store.clear();
+  assert.equal(store.getSnapshot().choices.length, 0);
+  assert.equal(canClearAttendance(store.getSnapshot()), true);
+  assert.equal(state.data.has(attendanceStorageKey("published")), true);
+  state.blockWrites(false);
+  store.clear();
+  assert.equal(canClearAttendance(store.getSnapshot()), false);
+  assert.equal(store.getSnapshot().persistence, "available");
+  assert.equal(state.data.has(attendanceStorageKey("published")), false);
+  assert.equal(
+    canClearAttendance({ choices: [], persistence: "invalid" }),
+    true,
+  );
+  assert.equal(canClearAttendance(INITIAL_ATTENDANCE), false);
+  unsubscribe();
+});
+
+test("external changes recover focus before a filtered card disappears without stealing unrelated focus", () => {
+  let focuses = 0;
+  const target = {
+    focus() {
+      focuses++;
+    },
+  };
+  const active = {
+    closest(selector) {
+      assert.equal(selector, "[data-attendance-event]");
+      return {
+        getAttribute(name) {
+          assert.equal(name, "data-attendance-event");
+          return "event-1";
+        },
+      };
+    },
+  };
+  const choices = [{ id: "event-1", interest: "maybe" }];
+  restoreFilteredFocus(active, target, "interested", choices);
+  assert.equal(focuses, 1);
+  restoreFilteredFocus(active, target, "maybe", choices);
+  restoreFilteredFocus(active, target, "all", choices);
+  restoreFilteredFocus(null, target, "interested", choices);
+  restoreFilteredFocus({ closest: () => null }, target, "interested", choices);
+  restoreFilteredFocus(
+    { closest: () => ({ getAttribute: () => "__proto__" }) },
+    target,
+    "interested",
+    choices,
+  );
+  restoreFilteredFocus(active, null, "interested", choices);
+  assert.equal(focuses, 1);
+  restoreFilteredFocus(active, target, "undecided", []);
+  assert.equal(focuses, 1);
+  restoreFilteredFocus(active, target, "maybe", []);
+  assert.equal(focuses, 2);
 });
