@@ -125,12 +125,21 @@ export async function preflightPmBudget(transport: typeof fetch = fetch) {
   } as const;
 }
 
+async function assertPmDatabaseFile(path: string): Promise<void> {
+  try {
+    if (!(await stat(path)).isFile())
+      throw new IngestionError("pm_database_unavailable");
+  } catch {
+    throw new IngestionError("pm_database_unavailable");
+  }
+}
+
 /** Open only existing schema-v2 storage; do not initialize, migrate or rescore it. */
 export async function inspectPmDatabase(path: string): Promise<void> {
-  if (!(await stat(path)).isFile())
-    throw new IngestionError("pm_database_unavailable");
-  const database = new DatabaseSync(path, { readOnly: true });
+  await assertPmDatabaseFile(path);
+  let database: DatabaseSync | undefined;
   try {
+    database = new DatabaseSync(path, { readOnly: true });
     database.exec("pragma query_only = on; pragma busy_timeout = 5000; begin");
     const names = new Set(
       database
@@ -154,8 +163,11 @@ export async function inspectPmDatabase(path: string): Promise<void> {
     )
       throw new IngestionError("pm_database_preflight_failed");
     database.exec("commit");
+  } catch (error) {
+    if (error instanceof IngestionError) throw error;
+    throw new IngestionError("pm_database_preflight_failed");
   } finally {
-    database.close();
+    database?.close();
   }
 }
 

@@ -1179,7 +1179,10 @@ test("real provider, native capture and SQLite compose offline with the guard an
 
 test("read-only preflight and draft snapshots never initialize storage or copy raw metadata", async () => {
   const dir = await temporaryDirectory();
-  await assert.rejects(inspectPmDatabase(join(dir, "missing.sqlite")));
+  await assert.rejects(
+    inspectPmDatabase(join(dir, "missing.sqlite")),
+    (error) => errorCode(error) === "pm_database_unavailable",
+  );
   assert.deepEqual(await readdir(dir), []);
   const path = await databasePath();
   const { summary } = await ingest({ path });
