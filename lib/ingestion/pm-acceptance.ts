@@ -18,10 +18,12 @@ import type { RunSummary, SearchOptions } from "./contracts.ts";
 import {
   acceptanceBudgetEnvelope,
   assertAcceptanceBudget,
+  assertAcceptanceSearchTariff,
   assertKeyAccess,
   acceptanceTransport,
   PM_MODEL,
   PM_BUDGET_USD,
+  UNVERIFIED_EXA_AUTO_SEARCH_USD,
 } from "./acceptance-budget.ts";
 
 export type PmMode = "plan" | "preflight" | "live";
@@ -111,7 +113,16 @@ export async function preflightPmBudget(transport: typeof fetch = fetch) {
       item && typeof item === "object" && "id" in item && item.id === PM_MODEL,
   );
   const envelope = acceptanceBudgetEnvelope(model);
-  return { envelope, within_ceiling: envelope.maximum_usd <= PM_BUDGET_USD };
+  return {
+    envelope,
+    model_within_ceiling: envelope.maximum_usd <= PM_BUDGET_USD,
+    search_tariff: {
+      engine: "exa",
+      assumed_usd_per_request: UNVERIFIED_EXA_AUTO_SEARCH_USD,
+      runtime_verified: false,
+    },
+    within_ceiling: false,
+  } as const;
 }
 
 /** Open only existing schema-v2 storage; do not initialize, migrate or rescore it. */
@@ -326,6 +337,7 @@ export async function runPmAcceptance(
     await savePmArtifact(directory, "budget.json", budget);
     output({ ...budget, ceiling_usd: PM_BUDGET_USD, paid_requests: 0 });
     assertAcceptanceBudget(budget.envelope);
+    assertAcceptanceSearchTariff();
     const key = await preflightPmAccess(
       selection.path,
       budget.envelope,

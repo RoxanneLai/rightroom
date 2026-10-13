@@ -16,6 +16,7 @@ import {
   acceptanceBudgetEnvelope,
   acceptanceTransport,
   assertAcceptanceBudget,
+  assertAcceptanceSearchTariff,
   assertKeyAccess,
   PM_MODEL,
   PM_BUDGET_USD,
@@ -491,7 +492,11 @@ test("public preflight is GET-only, rejects failures safely and never reads a cr
     calls.push({ url, init });
     return new Response(JSON.stringify({ data: [syntheticCatalog()] }));
   });
-  assert.equal(result.within_ceiling, true);
+  assert.equal(result.model_within_ceiling, true);
+  assert.equal(result.search_tariff.engine, "exa");
+  assert.equal(result.search_tariff.assumed_usd_per_request, 0.007);
+  assert.equal(result.search_tariff.runtime_verified, false);
+  assert.equal(result.within_ceiling, false);
   assert.equal(calls.length, 1);
   assert.equal(calls[0].init.method, "GET");
   assert.equal(calls[0].init.headers, undefined);
@@ -506,6 +511,40 @@ test("public preflight is GET-only, rejects failures safely and never reads a cr
       preflightPmBudget(transport),
       /pm_access_preflight_failed/,
     );
+});
+
+test("an unverified hosted-search tariff can never authorize paid execution", async () => {
+  assert.throws(
+    () => assertAcceptanceSearchTariff(),
+    /acceptance_search_tariff_unverified/,
+  );
+  const dir = await temporaryDirectory();
+  const output = [];
+  let calls = 0;
+  await assert.rejects(
+    runPmAcceptance(
+      ["--live"],
+      {
+        DATABASE_BACKEND: "sqlite",
+        SQLITE_DATABASE_PATH: join(dir, "must-not-open.sqlite"),
+        FOUNDER_RADAR_ALLOW_PAID_API: "1",
+      },
+      (value) => output.push(value),
+      async (_url, init) => {
+        calls++;
+        assert.equal(init.method, "GET");
+        assert.equal(init.headers, undefined);
+        return new Response(JSON.stringify({ data: [syntheticCatalog()] }));
+      },
+    ),
+    /acceptance_search_tariff_unverified/,
+  );
+  assert.equal(calls, 1);
+  assert.deepEqual(await readdir(dir), []);
+  const budget = output.find((value) => value.envelope);
+  assert.equal(budget.model_within_ceiling, true);
+  assert.equal(budget.within_ceiling, false);
+  assert.equal(budget.search_tariff.runtime_verified, false);
 });
 
 test("over-budget live preflight stops before credential access, backup or database creation", async () => {

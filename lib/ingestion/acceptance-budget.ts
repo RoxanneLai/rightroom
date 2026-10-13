@@ -10,7 +10,10 @@ import { ALLOWED_DOMAINS } from "./sources.ts";
 
 export const PM_MODEL = "openai/gpt-5.6-luna";
 export const PM_BUDGET_USD = 0.15;
-export const EXA_AUTO_SEARCH_USD = 0.007;
+// OpenRouter exposes this dated Exa price in human-readable documentation, not
+// through an authoritative tariff endpoint. It is an estimate only and can
+// never authorize a paid acceptance run.
+export const UNVERIFIED_EXA_AUTO_SEARCH_USD = 0.007;
 // UTF-8 safety limits, not token estimates or a tighter monetary reservation.
 export const PM_REQUEST_LIMITS = Object.freeze({
   research: Object.freeze({
@@ -98,7 +101,7 @@ function fullContextReservations(
   const reserve = (passes: number, tokens: number, searches = 0) =>
     microdollars(
       passes * (context * input + tokens * output) +
-        searches * EXA_AUTO_SEARCH_USD,
+        searches * UNVERIFIED_EXA_AUTO_SEARCH_USD,
     );
   const micros = {
     research: reserve(4, API_LIMITS.researchOutputTokens, 3),
@@ -229,6 +232,11 @@ export function acceptanceBudgetEnvelope(
 /** Refuse the complete attempt before a database run or paid request is created. */
 export function assertAcceptanceBudget(envelope: BudgetEnvelope): void {
   checkedEnvelope(envelope);
+}
+
+/** A documentation snapshot is not a live tariff. Paid execution stays closed. */
+export function assertAcceptanceSearchTariff(): void {
+  throw new IngestionError("acceptance_search_tariff_unverified");
 }
 
 /** Validate only safe credit fields; the key is never changed by this runner. */
