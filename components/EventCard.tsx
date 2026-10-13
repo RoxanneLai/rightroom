@@ -74,7 +74,9 @@ export function EventCard({
         {event.careerAssessment && (
           <CareerAttendance
             assessment={event.careerAssessment}
+            currencyCode={event.currencyCode}
             eventId={event.id}
+            priceAmountCents={event.priceAmountCents}
           />
         )}
         <div className="event-details">

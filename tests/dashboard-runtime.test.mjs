@@ -314,6 +314,50 @@ test("homepage and career alias rank published career assessments without leakin
   assert.equal(databaseCalls, callsBefore);
 });
 
+test("career cards show provisional USD price fit without classifying unknown or foreign prices", async () => {
+  const cases = [
+    [0, "USD", "Within the provisional $0–$150 Yes range"],
+    [15_000, "USD", "Within the provisional $0–$150 Yes range"],
+    [
+      15_001,
+      "USD",
+      "Within the provisional over-$150 through $250 Maybe range",
+    ],
+    [
+      25_000,
+      "USD",
+      "Within the provisional over-$150 through $250 Maybe range",
+    ],
+    [25_001, "USD", "Above the provisional $250 attendance limit"],
+    [null, null, null],
+    [10_000, "EUR", null],
+  ];
+  for (const [
+    index,
+    [priceAmountCents, currencyCode, expected],
+  ] of cases.entries()) {
+    responseRows = [
+      upcomingRow({
+        id: `d9d2e317-b328-421e-8f2c-f9152ee030${String(index).padStart(2, "0")}`,
+        career_assessment: careerAssessment,
+        price_amount_cents: priceAmountCents,
+        currency_code: currencyCode,
+      }),
+    ];
+    const { html } = await page("/career");
+    const section = html.match(
+      /<section class="career-attendance"[\s\S]*?<\/section>/,
+    )?.[0];
+    assert.ok(section);
+    if (expected) {
+      assert.match(section, /Provisional price fit/);
+      assert.ok(section.includes(expected));
+    } else {
+      assert.doesNotMatch(section, /Provisional price fit/);
+    }
+  }
+});
+
 test("career attendance warnings precede fit explanations with accessible headings and no private evidence", async () => {
   const expected = [
     ["eligibility_unknown", "Attendance eligibility not confirmed"],

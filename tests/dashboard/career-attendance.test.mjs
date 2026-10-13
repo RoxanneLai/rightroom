@@ -5,6 +5,11 @@ import {
   CAREER_CAUTION_LABELS,
   groupCareerCautions,
 } from "../../lib/career/display.ts";
+import {
+  ATTENDANCE_PRICE_LABELS,
+  attendancePriceBand,
+  PILOT_ATTENDANCE_PRICE_SETTINGS,
+} from "../../lib/career/attendance-price.ts";
 
 const attendance = [
   "eligibility_unknown",
@@ -105,4 +110,48 @@ test("historical v1-v4 assessments retain scores and cautions after display grou
     });
     assert.deepEqual(assessment, before);
   }
+});
+
+test("provisional USD price bands use the approved inclusive boundaries", () => {
+  for (const [amount, expected] of [
+    [0, "yes"],
+    [15_000, "yes"],
+    [15_001, "maybe"],
+    [25_000, "maybe"],
+    [25_001, "no"],
+  ])
+    assert.equal(attendancePriceBand(amount, "USD"), expected);
+  assert.deepEqual(PILOT_ATTENDANCE_PRICE_SETTINGS, {
+    version: "nyc-pilot-price-v1",
+    currency_code: "USD",
+    yes_max_cents: 15_000,
+    maybe_max_cents: 25_000,
+  });
+  assert.equal(Object.isFrozen(PILOT_ATTENDANCE_PRICE_SETTINGS), true);
+});
+
+test("unknown, malformed and non-USD prices never enter a pilot price band", () => {
+  for (const [amount, currency] of [
+    [null, "USD"],
+    [0, null],
+    [10_000, "EUR"],
+    [-1, "USD"],
+    [1.5, "USD"],
+    [Number.NaN, "USD"],
+    [Number.POSITIVE_INFINITY, "USD"],
+  ])
+    assert.equal(attendancePriceBand(amount, currency), "unknown");
+});
+
+test("each visible pilot price band has a fixed, nonempty label", () => {
+  assert.deepEqual(Object.keys(ATTENDANCE_PRICE_LABELS), [
+    "yes",
+    "maybe",
+    "no",
+  ]);
+  assert.ok(
+    Object.values(ATTENDANCE_PRICE_LABELS).every(
+      (label) => typeof label === "string" && label.length > 0,
+    ),
+  );
 });

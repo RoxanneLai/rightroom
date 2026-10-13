@@ -81,6 +81,10 @@
   line-height: 1.6;
 }
 
+.career-attendance .career-budget {
+  color: #343728;
+}
+
 body {
   margin: 0;
   background: var(--background);
