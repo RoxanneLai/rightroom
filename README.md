@@ -18,6 +18,8 @@ _Screenshot of the career sample edition. Events, people, scores, and availabili
 
 **My contribution.** Roxanne defined the user problem, directed the shift from startup networking to career-event discovery, prioritized features and safeguards, and guided iterative implementation and validation with AI coding assistants. The code was developed through that AI-assisted collaboration.
 
+See [product planning](docs/product/README.md) for the [working PRD](docs/product/PRD.md), proposed roadmap, and downloadable Word document and PM presentation. The plans distinguish implemented capabilities from proposed requirements and identify their implementation reference.
+
 ## Current milestone: career discovery with human review
 
 RightRoom began as FounderRadar, a working NYC startup-event prototype. That version established the core product mechanics: a static Next.js experience with six fictional events and deterministic ranking, followed by a local-first persistence layer, bounded agentic discovery, live draft collection, source provenance, and a human review boundary. Live runs remain unpublished until explicit approval.
