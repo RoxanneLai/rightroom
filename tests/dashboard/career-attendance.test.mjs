@@ -79,12 +79,13 @@ test("empty cautions and evidence-only cautions never invent an eligibility verd
   );
 });
 
-test("historical v1-v4 assessments retain scores and cautions after display grouping", () => {
+test("v1-v5 assessments retain scores and cautions after display grouping", () => {
   for (const version of [
     "career-score-v1",
     "career-score-v2",
     "career-score-v3",
     "career-score-v4",
+    "career-score-v5",
   ]) {
     const assessment = careerAssessmentSchema.parse({
       version,

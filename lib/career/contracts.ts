@@ -148,6 +148,7 @@ export const careerAssessmentSchema = z
       "career-score-v2",
       "career-score-v3",
       "career-score-v4",
+      "career-score-v5",
     ]),
     profile_version: z.string().max(160),
     score: z.number().min(0).max(100),

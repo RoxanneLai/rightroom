@@ -5,6 +5,14 @@ type Quoted<T> = { value: T; quote: string | null };
 
 const PRODUCT_TOPIC =
   /\b(?:product[ -](?:management|discovery|strategy|prioritization|roadmap(?:ping)?|leadership)|customer discovery|user research|for product managers)\b/i;
+const PRODUCT_PRACTITIONER =
+  /\bproduct(?: and design)? (?:practitioners|builders)\b/i;
+const PRODUCT_PRACTITIONER_AUDIENCE =
+  /\b(?:(?:event|series|gathering)(?:\s+is)?\s+(?:for|designed for|created for|organized for|welcomes?|brings together|gathers?)\s+(?:people who are\s+)?product(?: and design)? (?:practitioners|builders)|audience(?:\s+is|\s*:)\s*product(?: and design)? (?:practitioners|builders))\b/i;
+const PRODUCT_CLAIM = new RegExp(
+  `(?:${PRODUCT_TOPIC.source}|${PRODUCT_PRACTITIONER.source})`,
+  "i",
+);
 const DELIVERY_TOPIC =
   /\b(?:project management|program management|technical delivery|software delivery|agile|scrum)\b/i;
 const TECHNICAL_TOPIC =
@@ -17,6 +25,17 @@ const ROLE_CONTEXT =
   /\b(?:agenda|sessions?|workshops?|discussions?|talks?|panels?|demonstrations?|demos?|practice|learn|explore|see (?:exactly )?how|how to|covers?|focus(?:es)?|for career entrants|for product managers)\b/i;
 const BIOGRAPHY =
   /\b(?:biography|bio|experience in|years of|worked as|previously|served as)\b/i;
+const NETWORKING_ACTIVITY =
+  /\b(?:networking|mixer|meet and greet|small talk|informal conversations?)\b/i;
+const SOCIAL_AGENDA_ACTIVITY = /\b(?:happy hour|open hang)\b/i;
+const NETWORKING_CLAIM = new RegExp(
+  `(?:${NETWORKING_ACTIVITY.source}|${SOCIAL_AGENDA_ACTIVITY.source})`,
+  "i",
+);
+const SOCIAL_AGENDA_CONTEXT =
+  /\b(?:agenda|schedule|arrivals?|reception|social|after (?:the )?(?:talk|panel|session)s?|following (?:the )?(?:talk|panel|session)s?|join|includes?|begins?|starts?|ends?|come for|stay for)\b|\b\d{1,2}(?::\d{2})?\s*(?:am|pm)\b/i;
+const SOCIAL_ACTIVITY_AS_TOPIC =
+  /\b(?:talk|panel|workshop|session|guide|tips|case study)\s+(?:about|on|for)\s+(?:an?\s+)?(?:happy hours?|open hangs?)\b/i;
 
 /** Conservative textual gates, not a semantic classifier or factual verification. */
 function evidenceClauses(quote: string | null): string[] {
@@ -29,7 +48,7 @@ function evidenceClauses(quote: string | null): string[] {
 function contradicts(clauses: string[], topic: RegExp): boolean {
   const subject = `(?:${topic.source})`;
   const before = new RegExp(
-    `\\b(?:no|without|excluding|not(?: (?:a|an|the|about|focused on))?|unrelated to|(?:do not|does not|will not|don't|doesn't|won't)(?: (?:include|offer|provide|feature|cover|discuss))?)\\s+(?:(?:scheduled|planned|advertised|formal|informal|event-specific)\\s+){0,2}${subject}`,
+    `\\b(?:no|without|excluding|not(?: (?:a|an|the|about|focused on|for))?|unrelated to|(?:do not|does not|will not|don't|doesn't|won't)(?: (?:include|offer|provide|feature|cover|discuss))?)\\s+(?:(?:scheduled|planned|advertised|formal|informal|event-specific)\\s+){0,2}${subject}`,
     "gi",
   );
   const after = new RegExp(
@@ -57,11 +76,19 @@ export function supportedRelevance(
 ): Relevance {
   if (fact.value !== "direct" && fact.value !== "adjacent") return fact.value;
   const clauses = evidenceClauses(fact.quote).filter(
-    (clause) => ROLE_CONTEXT.test(clause) && !BIOGRAPHY.test(clause),
+    (clause) => !BIOGRAPHY.test(clause),
   );
   const topic = focus === "product" ? PRODUCT_TOPIC : DELIVERY_TOPIC;
-  if (contradicts(evidenceClauses(fact.quote), topic)) return null;
-  if (clauses.some((clause) => topic.test(clause))) return fact.value;
+  const claim = focus === "product" ? PRODUCT_CLAIM : topic;
+  if (contradicts(evidenceClauses(fact.quote), claim)) return null;
+  if (
+    clauses.some(
+      (clause) =>
+        (ROLE_CONTEXT.test(clause) && topic.test(clause)) ||
+        (focus === "product" && PRODUCT_PRACTITIONER_AUDIENCE.test(clause)),
+    )
+  )
+    return fact.value;
   return !contradicts(evidenceClauses(fact.quote), TECHNICAL_TOPIC) &&
     clauses.some((clause) => TECHNICAL_TOPIC.test(clause))
     ? "adjacent"
@@ -72,8 +99,7 @@ export function supportedRelevance(
 export function supportedInteraction(fact: Quoted<Interaction>): Interaction {
   if (fact.value === null || fact.value === "presentation") return fact.value;
   const activity = {
-    networking:
-      /\b(?:networking|mixer|meet and greet|small talk|informal conversations?)\b/i,
+    networking: NETWORKING_CLAIM,
     collaboration:
       /\b(?:collaborat(?:ion|ive|e)|group exercise|small[ -]group discussion|breakout discussion|pair programming)\b/i,
     qa: /\b(?:q\s*&\s*a|q and a|questions and answers|question[ -]and[ -]answer)\b/i,
@@ -81,6 +107,16 @@ export function supportedInteraction(fact: Quoted<Interaction>): Interaction {
   const clauses = evidenceClauses(fact.quote);
   // A quoted contradiction must not be salvaged by another positive sentence.
   if (contradicts(clauses, activity)) return null;
+  if (fact.value === "networking")
+    return clauses.some(
+      (clause) =>
+        (NETWORKING_ACTIVITY.test(clause) && EVENT_CONTEXT.test(clause)) ||
+        (SOCIAL_AGENDA_ACTIVITY.test(clause) &&
+          SOCIAL_AGENDA_CONTEXT.test(clause) &&
+          !SOCIAL_ACTIVITY_AS_TOPIC.test(clause)),
+    )
+      ? fact.value
+      : null;
   return clauses.some(
     (clause) => activity.test(clause) && EVENT_CONTEXT.test(clause),
   )

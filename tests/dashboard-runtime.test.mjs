@@ -375,6 +375,7 @@ test("career attendance warnings precede fit explanations with accessible headin
     "career-score-v2",
     "career-score-v3",
     "career-score-v4",
+    "career-score-v5",
   ]) {
     responseRows = [
       upcomingRow({

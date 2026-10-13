@@ -62,7 +62,7 @@ test("technical workshops get adjacent not direct product credit; platform chat 
   );
   const original = structuredClone(input);
   const result = assess(input);
-  assert.equal(result.version, "career-score-v4");
+  assert.equal(result.version, "career-score-v5");
   assert.equal(result.score, 22.5);
   assert.equal(result.components.role_fit, 22.5);
   assert.equal(result.components.interaction, 0);
@@ -97,6 +97,9 @@ test("role rules distinguish product practice, adjacent engineering and fallback
     "Workshop: product strategy and product roadmapping.",
     "Discussion: user research and customer discovery.",
     "An event for product managers.",
+    "This event is a series for product and design practitioners building with AI.",
+    "Audience: product builders and design leaders.",
+    "This event is designed for product practitioners who want to compare current practice.",
   ])
     assert.equal(
       supportedRelevance(fact("direct", quote), "product"),
@@ -106,6 +109,7 @@ test("role rules distinguish product practice, adjacent engineering and fallback
     "Software engineering workshop.",
     "AWS cloud workshop.",
     "Talk: artificial intelligence and data infrastructure.",
+    "This series covers software created for product builders.",
   ])
     assert.equal(
       supportedRelevance(fact("direct", quote), "product"),
@@ -138,6 +142,9 @@ test("keywords, merchandise and unrelated praise cannot establish PM role credit
     "Our community offers product management resources.",
     "Metaproduct management and cloudberry tasting.",
     "Product management.",
+    "Demo: a product builders toolkit for teams.",
+    "Workshop about product-builder merchandise.",
+    "This event demonstrates a toolkit for product builders.",
     "Speaker biography: twenty years of product management experience in software engineering.",
   ]) {
     const result = assess(career(quote));
@@ -173,6 +180,8 @@ test("networking needs event context and excludes platform features or recurring
     "Past events included a networking reception.",
     "No networking session is planned.",
     "The networking reception is cancelled.",
+    "Happy hour.",
+    "Open hang.",
   ])
     assert.equal(supportedInteraction(fact("networking", quote)), null, quote);
   for (const quote of [
@@ -180,12 +189,32 @@ test("networking needs event context and excludes platform features or recurring
     "5:00 PM networking reception.",
     "Join networking after the talk.",
     "The event includes a meet and greet.",
+    "Agenda: arrivals and happy hour.",
+    "8:30 PM: open hang and refreshments.",
+    "Come for the talks, stay for a happy hour.",
   ])
     assert.equal(
       supportedInteraction(fact("networking", quote)),
       "networking",
       quote,
     );
+});
+
+test("product-practitioner audience and scheduled social agenda close the observed PM calibration gap", () => {
+  const input = career(
+    "This event is a live series for product and design practitioners building with AI.",
+    "6:00 PM to 7:15 PM: arrivals and happy hour. 8:30 PM: open hang.",
+  );
+  const original = structuredClone(input);
+  const result = assess(input);
+  assert.equal(result.version, "career-score-v5");
+  assert.equal(result.components.role_fit, 30);
+  assert.equal(result.components.interaction, 20);
+  assert.ok(result.reasons.includes("direct_product_fit"));
+  assert.ok(result.reasons.includes("networking"));
+  assert.ok(!result.cautions.includes("role_evidence_limited"));
+  assert.ok(!result.cautions.includes("interaction_evidence_limited"));
+  assert.deepEqual(input, original);
 });
 
 test("collaboration and Q&A need their own activities; a talk or solo lab is not enough", () => {
@@ -266,13 +295,14 @@ test("all assessment versions remain readable and new review cautions are safe f
     "career-score-v2",
     "career-score-v3",
     "career-score-v4",
+    "career-score-v5",
   ])
     assert.equal(
       careerAssessmentSchema.safeParse({ ...result, version }).success,
       true,
     );
   assert.equal(
-    careerAssessmentSchema.safeParse({ ...result, version: "career-score-v5" })
+    careerAssessmentSchema.safeParse({ ...result, version: "career-score-v6" })
       .success,
     false,
   );
@@ -291,7 +321,9 @@ test("both extraction paths distinguish PM relevance and event interaction; repa
     CAREER_EXTRACTION_INSTRUCTIONS,
   ]) {
     assert.match(instructions, /at most adjacent product relevance/);
+    assert.match(instructions, /product practitioners or product builders/);
     assert.match(instructions, /Generic community chats/);
+    assert.match(instructions, /scheduled happy hour or open hang/);
     assert.match(instructions, /specific agenda passage/);
   }
   assert.match(
@@ -357,6 +389,7 @@ test("direct topic negation and cancelled role sessions still withhold credit", 
     "The product discovery workshop is cancelled.",
     "We do not cover product management in this workshop.",
     "Product discovery discussion. The product discovery discussion isn't offered.",
+    "This event is not for product practitioners.",
   ])
     assert.equal(
       supportedRelevance(fact("direct", quote), "product"),
@@ -394,6 +427,10 @@ test("event invitations to informal conversation count without the literal netwo
     "Our community offers informal conversation every month.",
     "Download the app for event networking and small talk.",
     "Connect with other attendees before the event starts.",
+    "Workshop about happy hour promotions.",
+    "Panel on open hang formats.",
+    "Our community hosts a happy hour every month.",
+    "Past events included an open hang.",
   ])
     assert.equal(supportedInteraction(fact("networking", quote)), null, quote);
 });
@@ -418,6 +455,8 @@ test("interaction negation is activity-specific and still handles cancelled or a
     "This event will not include networking.",
     "The event won't offer small talk.",
     "Agenda: networking reception. Networking won't be provided.",
+    "The happy hour is cancelled.",
+    "No open hang is planned for this event.",
   ])
     assert.equal(supportedInteraction(fact("networking", quote)), null, quote);
 });

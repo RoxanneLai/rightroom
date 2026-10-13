@@ -81,7 +81,25 @@ The projected order, RevenueCat then Horizons then Double Diamond, does not matc
 - Version 4 requires explicit networking language. Double Diamond's agenda advertises a happy hour and open hang, which the user treats as networking, but neither phrase receives interaction credit.
 - A known paid price receives no free-admission bonus, but even a $475 price creates no fixed assessment caution or negative score. The new provisional price guidance instead shows it as above the user's attendance limit without changing relevance or rewriting assessments.
 
-This is sufficient evidence of a calibration gap, not sufficient evidence for a broad keyword expansion or new weights. The next scoring decision should consider narrowly event-scoped product-practitioner and social-agenda language. Price remains a separate attendance signal under the approved provisional bands, and historical assessments remain unchanged.
+This is sufficient evidence of a calibration gap, not sufficient evidence for a broad keyword expansion or new weights. Version 5 therefore makes only the two observed, event-scoped vocabulary changes below. Price remains a separate attendance signal under the approved provisional bands, and historical assessments remain unchanged.
+
+## Bounded version 5 calibration
+
+Version 5 recognizes an explicit current-event audience of `product practitioners`, `product and design practitioners`, or `product builders` as direct product evidence when the model already labeled the fact direct. It also recognizes a scheduled `happy hour` or `open hang` as networking when its own clause includes an agenda, invitation or clock-time context. It does not upgrade adjacent, none or unknown model labels.
+
+The new rules reject bare social keywords, recurring-community and past-event copy, cancelled or absent activities, talks about happy-hour/open-hang formats, product-builder tools or merchandise, speaker biographies, and evidence borrowed from another quote. The component weights and price treatment are unchanged.
+
+The same conservative facts and listing excerpts used for the version 4 comparison produce:
+
+| Candidate                 | User order | Version 4 | Version 5 | Role | People | Interaction | Domain | Access |
+| ------------------------- | ---------: | --------: | --------: | ---: | -----: | ----------: | -----: | -----: |
+| Double Diamond            |          1 |        25 |        75 |   30 |     25 |          20 |      0 |      0 |
+| RevenueCat IndieDev Talks |          2 |        70 |        70 | 22.5 |     25 |          20 |      0 |    2.5 |
+| Horizons New York         |          3 |      47.5 |      47.5 |    0 |     25 |          20 |      0 |    2.5 |
+
+The relevance order now matches the user's first-through-third ordering. This is one three-event calibration check, not evidence that the numerical gaps are generally calibrated or that any event will produce career outcomes. Horizons' $475 price still changes its separate provisional attendance decision to `No`; it does not reduce the relevance score. New assessments carry `career-score-v5`; saved versions 1 through 4 are still read with their original scores and are not migrated or refreshed.
+
+Offline verification passed all 313 deterministic tests, lint, TypeScript, formatting, diff validation, a clean production build, 4 compiled-page checks and 15 runtime checks. The checks include positive and false-positive vocabulary cases plus mixed version 1 through 5 reads. No paid call, credential read, database write, real-event refresh or publication was performed.
 
 ## Sprint exit criteria
 
@@ -90,7 +108,7 @@ This sprint is complete when:
 - all three events have a decision and reason;
 - the user supplies a relative ordering, including ties if appropriate;
 - attendance friction is separated from career relevance in the recorded reasoning;
-- the results are compared with version 4 scoring offline, without rewriting historical assessments; and
+- the results are compared with version 4 and the bounded version 5 calibration offline, without rewriting historical assessments; and
 - any ranking or attendance-UI change is justified by the observed decisions rather than by the desire to produce a higher score.
 
 Finding no event worth attending is a valid result. It should change the target or sourcing strategy, not trigger an automatic paid search.
