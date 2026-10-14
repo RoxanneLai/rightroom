@@ -63,8 +63,10 @@ function evaluationInput() {
         sourcesCreated: 2,
         sourcesUpdated: 0,
         runErrorCodes: [],
+        sourceFailureCounts: {},
         summary: parseSafeRunSummary(
           summary(firstRun, {
+            sources_unlinked: 0,
             provider_diagnostics: [
               diagnostic("research"),
               diagnostic("extraction"),
@@ -82,6 +84,7 @@ function evaluationInput() {
         sourcesCreated: 1,
         sourcesUpdated: 0,
         runErrorCodes: ["invalid_extraction_shape"],
+        sourceFailureCounts: { invalid_extraction_shape: 1 },
         summary: parseSafeRunSummary(
           summary(secondRun, {
             events_written: 0,
@@ -103,6 +106,7 @@ function evaluationInput() {
         sourcesCreated: 0,
         sourcesUpdated: 0,
         runErrorCodes: [],
+        sourceFailureCounts: {},
         summary: null,
       },
     ],
@@ -166,12 +170,32 @@ function seedDatabase(path) {
       "succeeded",
       startedAt,
       startedAt,
-      2,
-      2,
+      3,
+      3,
       0,
       null,
       JSON.stringify({
-        summary: summary(firstRun),
+        summary: summary(firstRun, {
+          sources_discovered: 3,
+          sources_created: 3,
+          sources_unlinked: 2,
+          source_capture_diagnostics: [
+            {
+              source_id: "70000000-0000-4000-8000-000000000012",
+              status: "failed",
+              error_code: "source_capture_redirect_limit",
+            },
+            "PRIVATE-MALFORMED-CAPTURE-DIAGNOSTIC",
+          ],
+        }),
+        candidate_failures: [
+          {
+            source_id: "70000000-0000-4000-8000-000000000013",
+            error_code: "invalid_event_timezone",
+            private_fields: "PRIVATE-CANDIDATE-CONTENT",
+          },
+          "PRIVATE-MALFORMED-CANDIDATE-FAILURE",
+        ],
         consulted_urls: [
           "https://www.meetup.com/example/events/1",
           "https://community.example.com/events/1",
@@ -268,14 +292,25 @@ test("aggregate evaluation identifies breadth, repair, cost, and interrupted-run
   assert.equal(report.discovery.candidate_slot_fill_rate, 0.5);
   assert.equal(report.outcomes.usable_draft_writes, 1);
   assert.deepEqual(report.outcomes.loss_category_counts, {
-    response_shape: 1,
+    extraction_or_validation: 1,
+  });
+  assert.deepEqual(report.outcomes.source_outcome_funnel, {
+    discovered_source_observations: 3,
+    usable_draft_writes: 1,
+    retained_links_without_draft_write: 1,
+    unlinked_source_observations_after_run: 1,
+    observations_without_safe_summary: 0,
+    draft_write_rate_per_discovered_source: 0.3333,
+    source_failure_observations: 1,
+    source_failure_code_counts: { invalid_extraction_shape: 1 },
+    source_failure_category_counts: { extraction_or_validation: 1 },
   });
   assert.equal(report.compatibility.repair_runs, 1);
   assert.equal(report.compatibility.repair_run_rate, 0.5);
   assert.equal(report.compatibility.diagnostic_covered_runs, 2);
   assert.equal(report.recent_cohort.runs, 2);
   assert.deepEqual(report.recent_cohort.loss_category_counts, {
-    response_shape: 1,
+    extraction_or_validation: 1,
   });
   assert.equal(report.usage.provider_reported_cost_usd, 0.042);
   assert.equal(report.usage.cost_per_usable_draft_write_usd, 0.042);
@@ -289,7 +324,7 @@ test("aggregate evaluation identifies breadth, repair, cost, and interrupted-run
     report.recommendations.map((item) => item.focus),
     [
       "close_interrupted_runs",
-      "candidate_to_draft_conversion",
+      "source_failure_replay",
       "discovery_recall",
       "source_family_conversion",
       "source_portfolio_diversity",
@@ -298,7 +333,7 @@ test("aggregate evaluation identifies breadth, repair, cost, and interrupted-run
   );
   assert.match(
     report.recommendations[1].next_experiment,
-    /Replay preserved recent response-shape failures/,
+    /replay preserved evidence/,
   );
   assert.equal(
     report.recommendations[3].evidence,
@@ -330,6 +365,10 @@ test("SQLite evaluation is read-only, merges safe checkpoints, and writes a priv
   const input = await loadEvaluationInput(databasePath, directory);
   assert.equal(input.runs.length, 1);
   assert.equal(input.runs[0].summary.diagnostics.length, 3);
+  assert.deepEqual(input.runs[0].sourceFailureCounts, {
+    invalid_event_timezone: 1,
+    source_capture_redirect_limit: 1,
+  });
   assert.equal(input.checkpoints.filesRead, 2);
   assert.equal(input.checkpoints.invalidFiles, 1);
   assert.equal(input.checkpoints.matchedRuns, 1);

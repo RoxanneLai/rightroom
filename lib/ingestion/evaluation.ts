@@ -24,26 +24,41 @@ const LOSS_CATEGORY_BY_ERROR: Record<string, string> = {
   search_not_performed: "discovery_execution",
   search_usage_missing: "discovery_execution",
   provider_request_failed: "provider_or_transport",
+  provider_request_timeout: "provider_or_transport",
   provider_incomplete: "provider_or_transport",
+  provider_refused: "provider_or_transport",
   provider_authentication_failed: "provider_or_transport",
   provider_access_denied: "provider_or_transport",
   provider_quota_or_rate_limit: "provider_or_transport",
-  source_fetch_usage_missing: "source_verification",
-  source_fetch_failed: "source_verification",
-  source_fetch_incomplete: "source_verification",
-  source_fetch_limit_exceeded: "source_verification",
-  source_evidence_insufficient: "source_verification",
-  source_page_cancelled: "source_verification",
-  invalid_extraction_shape: "response_shape",
-  invalid_repair_output: "response_shape",
-  invalid_candidate: "response_shape",
-  irrelevant_event: "eligibility",
-  virtual_event: "eligibility",
-  wrong_city: "eligibility",
-  out_of_range: "eligibility",
-  incomplete_event: "event_validation",
-  candidate_missing: "event_validation",
-  event_already_started: "event_validation",
+  source_fetch_usage_missing: "source_capture",
+  source_fetch_failed: "source_capture",
+  source_fetch_incomplete: "source_capture",
+  source_fetch_limit_exceeded: "source_capture",
+  source_evidence_insufficient: "source_capture",
+  source_page_past: "expected_rejection",
+  source_page_cancelled: "expected_rejection",
+  source_page_virtual_only: "expected_rejection",
+  source_not_event_listing: "expected_rejection",
+  source_page_conflict: "expected_rejection",
+  irrelevant_event: "expected_rejection",
+  virtual_event: "expected_rejection",
+  wrong_city: "expected_rejection",
+  out_of_range: "expected_rejection",
+  outside_search_location: "expected_rejection",
+  outside_search_window: "expected_rejection",
+  unsupported_event_format: "expected_rejection",
+  event_already_started: "expected_rejection",
+  invalid_extraction_shape: "extraction_or_validation",
+  invalid_extraction_json: "extraction_or_validation",
+  invalid_repair_output: "extraction_or_validation",
+  invalid_repair_json: "extraction_or_validation",
+  invalid_candidate: "extraction_or_validation",
+  incomplete_event: "extraction_or_validation",
+  candidate_missing: "extraction_or_validation",
+  invalid_event_timezone: "extraction_or_validation",
+  invalid_event_end: "extraction_or_validation",
+  unsupported_title: "extraction_or_validation",
+  source_mismatch: "extraction_or_validation",
   run_cancelled: "operator_cancelled",
 };
 
@@ -84,6 +99,7 @@ export type EvaluationRun = {
   sourcesCreated: number;
   sourcesUpdated: number;
   runErrorCodes: string[];
+  sourceFailureCounts: Record<string, number>;
   summary: SafeRunSummary | null;
 };
 
@@ -333,6 +349,22 @@ function sourcePortfolioRecord(
   return result;
 }
 
+function sourceFailureRecords(
+  rows: UnknownRecord[],
+): Map<string, Record<string, number>> {
+  const result = new Map<string, Record<string, number>>();
+  for (const row of rows) {
+    if (typeof row.run_id !== "string") continue;
+    const error = safeCategory(row.error_code);
+    const count = nonnegativeInteger(row.count);
+    if (!error || count === null) continue;
+    const counts = result.get(row.run_id) ?? {};
+    counts[error] = (counts[error] ?? 0) + count;
+    result.set(row.run_id, counts);
+  }
+  return result;
+}
+
 function parseRunErrorCodes(value: unknown): string[] {
   if (typeof value !== "string") return [];
   return value
@@ -378,6 +410,46 @@ export async function loadEvaluationInput(
          order by started_at, id`,
       )
       .all() as UnknownRecord[];
+    const sourceFailureRows = database
+      .prepare(
+        `with source_failures as (
+           select search_runs.id run_id,
+             json_extract(
+               case when failure.type = 'object' then failure.value else '{}' end,
+               '$.error_code'
+             ) error_code
+           from search_runs,
+             json_each(search_runs.metadata, '$.candidate_failures') failure
+           where search_runs.agent_name = 'founder-radar-discovery'
+             and search_runs.provider = 'openrouter-web-search'
+             and json_type(
+               case when failure.type = 'object' then failure.value else '{}' end,
+               '$.error_code'
+             ) = 'text'
+           union all
+           select search_runs.id,
+             json_extract(
+               case when diagnostic.type = 'object' then diagnostic.value else '{}' end,
+               '$.error_code'
+             )
+           from search_runs,
+             json_each(search_runs.metadata, '$.summary.source_capture_diagnostics') diagnostic
+           where search_runs.agent_name = 'founder-radar-discovery'
+             and search_runs.provider = 'openrouter-web-search'
+             and json_extract(
+               case when diagnostic.type = 'object' then diagnostic.value else '{}' end,
+               '$.status'
+             ) = 'failed'
+             and json_type(
+               case when diagnostic.type = 'object' then diagnostic.value else '{}' end,
+               '$.error_code'
+             ) = 'text'
+         )
+         select run_id, error_code, count(*) count from source_failures
+         group by run_id, error_code order by run_id, error_code`,
+      )
+      .all() as UnknownRecord[];
+    const failuresByRun = sourceFailureRecords(sourceFailureRows);
     let matchedRuns = 0;
     const runs = rows.map((row): EvaluationRun => {
       const id = String(row.id);
@@ -392,6 +464,7 @@ export async function loadEvaluationInput(
         sourcesCreated: nonnegativeInteger(row.sources_created) ?? 0,
         sourcesUpdated: nonnegativeInteger(row.sources_updated) ?? 0,
         runErrorCodes: parseRunErrorCodes(row.error_message),
+        sourceFailureCounts: failuresByRun.get(id) ?? {},
         summary: mergeSummary(
           parseSafeRunSummary(row.summary_json),
           checkpoint,
@@ -501,6 +574,7 @@ function increment(counts: Record<string, number>, key: string | null): void {
 }
 
 function lossCategory(error: string): string {
+  if (error.startsWith("source_capture_")) return "source_capture";
   return LOSS_CATEGORY_BY_ERROR[error] ?? "other_safe_error";
 }
 
@@ -510,15 +584,6 @@ function ratio(numerator: number, denominator: number): number | null {
 
 function money(value: number): number {
   return Number(value.toFixed(8));
-}
-
-function dominantCategory(counts: Record<string, number>): string | null {
-  return (
-    Object.entries(counts).sort(
-      ([leftName, leftCount], [rightName, rightCount]) =>
-        rightCount - leftCount || leftName.localeCompare(rightName),
-    )[0]?.[0] ?? null
-  );
 }
 
 function summarizeSourcePortfolio(
@@ -550,6 +615,54 @@ function summarizeSourcePortfolio(
       totalConsultations,
     ),
     family_metrics: familyMetrics,
+  };
+}
+
+function summarizeSourceOutcomeFunnel(runs: EvaluationRun[]): UnknownRecord {
+  const failureCodeCounts: Record<string, number> = {};
+  const failureCategoryCounts: Record<string, number> = {};
+  let discoveredSources = 0;
+  let draftWrites = 0;
+  let unlinkedAfterRun = 0;
+  let retainedLinksWithoutWrite = 0;
+  let observationsWithoutSummary = 0;
+  for (const run of runs) {
+    discoveredSources += run.sourcesDiscovered;
+    for (const [error, count] of Object.entries(run.sourceFailureCounts)) {
+      failureCodeCounts[error] = (failureCodeCounts[error] ?? 0) + count;
+      const category = lossCategory(error);
+      failureCategoryCounts[category] =
+        (failureCategoryCounts[category] ?? 0) + count;
+    }
+    if (!run.summary) {
+      observationsWithoutSummary += run.sourcesDiscovered;
+      continue;
+    }
+    draftWrites += run.summary.eventsWritten;
+    unlinkedAfterRun += run.summary.sourcesUnlinked;
+    retainedLinksWithoutWrite += Math.max(
+      0,
+      run.sourcesDiscovered -
+        run.summary.sourcesUnlinked -
+        run.summary.eventsWritten,
+    );
+  }
+  return {
+    discovered_source_observations: discoveredSources,
+    usable_draft_writes: draftWrites,
+    retained_links_without_draft_write: retainedLinksWithoutWrite,
+    unlinked_source_observations_after_run: unlinkedAfterRun,
+    observations_without_safe_summary: observationsWithoutSummary,
+    draft_write_rate_per_discovered_source: ratio(
+      draftWrites,
+      discoveredSources,
+    ),
+    source_failure_observations: Object.values(failureCodeCounts).reduce(
+      (sum, count) => sum + count,
+      0,
+    ),
+    source_failure_code_counts: failureCodeCounts,
+    source_failure_category_counts: failureCategoryCounts,
   };
 }
 
@@ -602,6 +715,7 @@ function summarizeCohort(runs: EvaluationRun[]): UnknownRecord {
     repair_run_rate: ratio(repairRuns, diagnosticCoveredRuns),
     error_counts: errorCounts,
     loss_category_counts: lossCategoryCounts,
+    source_outcome_funnel: summarizeSourceOutcomeFunnel(runs),
   };
 }
 
@@ -711,9 +825,21 @@ export function evaluateIngestionHistory(
   const recentDraftRate =
     recentCohort.usable_draft_write_rate_per_discovered_source as number | null;
   const recentRepairRate = recentCohort.repair_run_rate as number | null;
-  const recentLossCategory = dominantCategory(
-    recentCohort.loss_category_counts as Record<string, number>,
-  );
+  const recentSourceFunnel =
+    recentCohort.source_outcome_funnel as UnknownRecord;
+  const recentSourceFailureCategories =
+    recentSourceFunnel.source_failure_category_counts as Record<string, number>;
+  const recentExpectedRejections =
+    recentSourceFailureCategories.expected_rejection ?? 0;
+  const recentCaptureFailures =
+    recentSourceFailureCategories.source_capture ?? 0;
+  const recentExtractionOrValidationFailures =
+    recentSourceFailureCategories.extraction_or_validation ?? 0;
+  const recentActionableSourceFailures =
+    recentCaptureFailures + recentExtractionOrValidationFailures;
+  const recentRetainedLinks =
+    recentSourceFunnel.retained_links_without_draft_write as number;
+  const outcomeFunnel = summarizeSourceOutcomeFunnel(terminalRuns);
   const sourcePortfolio = summarizeSourcePortfolio(
     input.databaseState.sourcePortfolio,
   );
@@ -744,14 +870,16 @@ export function evaluateIngestionHistory(
       next_experiment:
         "Preview each record with ingest:recover and close only confirmed interrupted runs.",
     });
-  if (recentDraftRate !== null && recentDraftRate < 0.5)
+  if (
+    recentDraftRate !== null &&
+    recentDraftRate < 0.5 &&
+    recentActionableSourceFailures > 0
+  )
     recommendations.push({
-      focus: "candidate_to_draft_conversion",
-      evidence: `The latest five terminal runs converted ${(recentDraftRate * 100).toFixed(1)}% of discovered source observations into usable draft writes${recentLossCategory ? `; ${recentLossCategory} was the most frequent recorded loss category` : ""}.`,
+      focus: "source_failure_replay",
+      evidence: `The latest five terminal runs recorded ${recentCaptureFailures} source-capture and ${recentExtractionOrValidationFailures} extraction-or-validation failure observations, alongside ${recentExpectedRejections} expected rejections and ${recentRetainedLinks} retained links without a draft write.`,
       next_experiment:
-        recentLossCategory === "response_shape"
-          ? "Replay preserved recent response-shape failures through the current offline parser and repair boundary."
-          : "Inspect the dominant safe loss category before changing prompts or models.",
+        "Confirm whether the capture and validation failures predate current code, then replay preserved evidence before changing prompts, models, or adapters.",
     });
   if (recentFillRate !== null && recentFillRate < 0.75)
     recommendations.push({
@@ -810,6 +938,7 @@ export function evaluateIngestionHistory(
       source_only_observations: sourceOnlyObservations,
       error_counts: errorCounts,
       loss_category_counts: lossCategoryCounts,
+      source_outcome_funnel: outcomeFunnel,
     },
     discovery: {
       runs_with_requested_limit: runsWithRequestedLimit,
@@ -860,6 +989,8 @@ export function evaluateIngestionHistory(
     limitations: [
       "Historical runs span changing prompts, schemas, models, and compatibility code; they are not a controlled model comparison.",
       "Usable draft writes include refreshed drafts and are not a count of unique newly created events.",
+      "Retained links without a draft write include protected or unchanged existing events and can overlap a failed refresh; they are not lost sources.",
+      "Per-source failure observations come only from allowlisted candidate-failure and capture diagnostics; run-level provider failures are reported separately.",
       "Provider-reported costs and token counts are unverified and may be incomplete.",
       "Latest source errors describe current source rows, not an append-only history of every attempt.",
       "Aggregate metrics do not replace manual factual verification against canonical listing pages.",
