@@ -159,8 +159,8 @@ This is a proposed sequence of release gates, not a calendar commitment. Estimat
 ### Next actions
 
 - Approve a spending policy before another paid PM acceptance attempt. Do not lower the existing ceiling silently.
-- Use the manually checked Lenny meetup as one positive PM example, while keeping its date, approval requirement and unknown price explicit.
-- Expand the October 13 three-event manual PM sprint into a small research cohort and compare attendance decisions with score explanations. One user's preference and the bounded version 5 match are starting evidence, not general calibration.
+- Use the manually checked Lenny meetup as one positive PM example, while keeping its date, approval requirement and organizer-page price omission explicit.
+- Review the [prepared seven-event PM research cohort](../PM-RESEARCH-COHORT.md) and compare unanchored attendance decisions with score explanations. One user's prior preference and the bounded version 5 match are starting evidence, not general calibration.
 - Use the approved $0–$150 `Yes`, above-$150-through-$250 `Maybe`, and above-$250 `No` price bands as provisional shared NYC-pilot guidance. Keep the signal separate from career relevance and leave unknown or non-USD prices unclassified.
 - Decide whether the initial hosted pilot keeps one shared profile or offers a small approved profile selector. Build accounts only if the pilot needs them.
 
