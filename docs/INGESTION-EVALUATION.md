@@ -39,8 +39,20 @@ No arguments prints help before database or checkpoint access. The evaluator rej
 | Repair-run rate             | Runs containing an observed repair request divided by runs with request diagnostics                       |
 | Cost per usable draft write | Provider-reported cost from cost-complete runs divided by their usable draft writes                       |
 | Source error counts         | Each source row's latest attempt result, not an append-only history                                       |
+| Marketplace share           | Meetup, Luma and Eventbrite consultations divided by all recorded listing consultations                   |
+| Source-family link rate     | Current non-synthetic source rows linked to events divided by stored rows for a fixed safe source family  |
 
-Costs and token totals are unverified provider diagnostics. Missing values remain missing instead of being inferred as zero. Aggregate output includes no run IDs, source URLs, event facts, or private text.
+Source portfolio output uses only the fixed labels `meetup`, `luma`, `eventbrite`, and `first_party_or_other`. It excludes synthetic `.example.invalid` URLs and never emits a stored hostname or listing URL. Costs and token totals are unverified provider diagnostics. Missing values remain missing instead of being inferred as zero. Aggregate output includes no run IDs, source URLs, event facts, or private text.
+
+## October 13, 2026 cleanup and source portfolio follow-up
+
+All 11 records still marked `running` were individually previewed at their unchanged revisions after confirming that no process held the SQLite file. A consistent backup was written under ignored `codex-tmp/` first. The recovery command then closed the records as `cancelled`, preserving every run, source, event and audit field without retries or deletion. The follow-up list returned zero running records.
+
+After cleanup, all 54 discovery runs are terminal and summarized. The historical candidate-slot fill rate is 51.23%; the decrease from the pre-cleanup 64.34% reflects the 11 confirmed interrupted attempts now correctly included as zero-result terminal runs. The latest five terminal runs remain the more relevant operational cohort: they filled 8 of 15 requested slots and produced 2 usable draft writes from 8 source observations.
+
+The new safe source-portfolio metrics show 91 recorded consultations after normalizing `www` variants: 46 Meetup, 23 Luma, 14 Eventbrite, 7 first-party FINOS listings and 1 first-party Datadog listing. Marketplace platforms therefore account for 91.2% of consultations. Current non-synthetic rows link 9 of 12 Meetup sources, 1 of 9 Luma sources, 3 of 4 Eventbrite sources, 1 of 1 FINOS source and 0 of 1 Datadog source to events. These are diagnostic historical rates across changing implementations, not controlled platform comparisons. The Luma result supports a focused evidence review before more Luma search volume; the portfolio concentration supports one bounded first-party organizer comparison before another broad source adapter.
+
+The saved-evidence review did not reproduce a current Luma-specific defect. The nine historical Luma rows span three invalid repair outputs, two fetch failures, two past-page rejections, one incomplete event and one extraction-shape error across September 3 through October 3. The preserved three-case replay contains Meetup and Eventbrite evidence rather than a Luma response, and all three cases pass the current adapter. The existing history therefore cannot distinguish a remaining Luma incompatibility from legacy response-shape behavior, inaccessible pages, or correct stale-event rejection. No Luma code was changed without a reproducible failure. The next bounded Luma failure should be captured and replayed offline before an adapter change is considered.
 
 ## September 27, 2026 checkpoint
 

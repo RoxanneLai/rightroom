@@ -114,6 +114,29 @@ function evaluationInput() {
       unlinkedSources: 2,
       publicationStatuses: { draft: 1, published: 1 },
       sourceErrorCounts: { none: 1, invalid_extraction_shape: 2 },
+      sourcePortfolio: {
+        meetup: {
+          consultations: 4,
+          consultationRuns: 2,
+          storedSources: 4,
+          linkedSources: 3,
+          latestErrorSources: 1,
+        },
+        luma: {
+          consultations: 3,
+          consultationRuns: 2,
+          storedSources: 3,
+          linkedSources: 1,
+          latestErrorSources: 2,
+        },
+        first_party_or_other: {
+          consultations: 1,
+          consultationRuns: 1,
+          storedSources: 1,
+          linkedSources: 1,
+          latestErrorSources: 0,
+        },
+      },
     },
     checkpoints: {
       filesRead: 2,
@@ -149,6 +172,10 @@ function seedDatabase(path) {
       null,
       JSON.stringify({
         summary: summary(firstRun),
+        consulted_urls: [
+          "https://www.meetup.com/example/events/1",
+          "https://community.example.com/events/1",
+        ],
         research_report: "PRIVATE-RESEARCH-CONTENT",
       }),
       startedAt,
@@ -252,18 +279,30 @@ test("aggregate evaluation identifies breadth, repair, cost, and interrupted-run
   });
   assert.equal(report.usage.provider_reported_cost_usd, 0.042);
   assert.equal(report.usage.cost_per_usable_draft_write_usd, 0.042);
+  assert.equal(report.source_portfolio.total_consultations, 8);
+  assert.equal(report.source_portfolio.marketplace_consultation_share, 0.875);
+  assert.equal(
+    report.source_portfolio.family_metrics.luma.linked_source_rate,
+    0.3333,
+  );
   assert.deepEqual(
     report.recommendations.map((item) => item.focus),
     [
       "close_interrupted_runs",
       "candidate_to_draft_conversion",
       "discovery_recall",
+      "source_family_conversion",
+      "source_portfolio_diversity",
       "structured_output_compatibility",
     ],
   );
   assert.match(
     report.recommendations[1].next_experiment,
     /Replay preserved recent response-shape failures/,
+  );
+  assert.equal(
+    report.recommendations[3].evidence,
+    "luma linked 33.3% of its stored source rows to events.",
   );
 });
 
@@ -295,6 +334,22 @@ test("SQLite evaluation is read-only, merges safe checkpoints, and writes a priv
   assert.equal(input.checkpoints.invalidFiles, 1);
   assert.equal(input.checkpoints.matchedRuns, 1);
   assert.deepEqual(input.databaseState.sourceErrorCounts, { unknown: 1 });
+  assert.deepEqual(input.databaseState.sourcePortfolio, {
+    first_party_or_other: {
+      consultations: 1,
+      consultationRuns: 1,
+      storedSources: 0,
+      linkedSources: 0,
+      latestErrorSources: 0,
+    },
+    meetup: {
+      consultations: 1,
+      consultationRuns: 1,
+      storedSources: 1,
+      linkedSources: 1,
+      latestErrorSources: 1,
+    },
+  });
   const result = await runEvaluationCli(
     ["run", "--checkpoints", directory, "--output", outputPath],
     {

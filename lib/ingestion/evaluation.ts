@@ -97,6 +97,7 @@ export type EvaluationInput = {
     unlinkedSources: number;
     publicationStatuses: Record<string, number>;
     sourceErrorCounts: Record<string, number>;
+    sourcePortfolio: Record<string, SourceFamilyMetrics>;
   };
   checkpoints: {
     filesRead: number;
@@ -104,6 +105,14 @@ export type EvaluationInput = {
     matchedRuns: number;
     unmatchedRuns: number;
   };
+};
+
+export type SourceFamilyMetrics = {
+  consultations: number;
+  consultationRuns: number;
+  storedSources: number;
+  linkedSources: number;
+  latestErrorSources: number;
 };
 
 export const EVALUATION_HELP = `Evaluate local ingestion quality offline:
@@ -306,6 +315,24 @@ function numberRecord(
   return result;
 }
 
+function sourcePortfolioRecord(
+  rows: UnknownRecord[],
+): Record<string, SourceFamilyMetrics> {
+  const result: Record<string, SourceFamilyMetrics> = {};
+  for (const row of rows) {
+    const family = safeCategory(row.family);
+    if (!family) continue;
+    result[family] = {
+      consultations: nonnegativeInteger(row.consultations) ?? 0,
+      consultationRuns: nonnegativeInteger(row.consultation_runs) ?? 0,
+      storedSources: nonnegativeInteger(row.stored_sources) ?? 0,
+      linkedSources: nonnegativeInteger(row.linked_sources) ?? 0,
+      latestErrorSources: nonnegativeInteger(row.latest_error_sources) ?? 0,
+    };
+  }
+  return result;
+}
+
 function parseRunErrorCodes(value: unknown): string[] {
   if (typeof value !== "string") return [];
   return value
@@ -397,6 +424,53 @@ export async function loadEvaluationInput(
          from event_sources group by last_attempt_error`,
       )
       .all() as UnknownRecord[];
+    const sourcePortfolioRows = database
+      .prepare(
+        `with consulted as (
+           select search_runs.id run_id, lower(cast(url.value as text)) url
+           from search_runs, json_each(search_runs.metadata, '$.consulted_urls') url
+           where search_runs.agent_name = 'founder-radar-discovery'
+             and search_runs.provider = 'openrouter-web-search'
+             and url.type = 'text'
+             and lower(cast(url.value as text)) like 'https://%'
+             and lower(cast(url.value as text)) not like 'https://%.example.invalid/%'
+         ), classified_consultations as (
+           select run_id,
+             case
+               when url like 'https://meetup.com/%' or url like 'https://www.meetup.com/%' then 'meetup'
+               when url like 'https://luma.com/%' or url like 'https://www.luma.com/%' then 'luma'
+               when url like 'https://eventbrite.com/%' or url like 'https://www.eventbrite.com/%' then 'eventbrite'
+               else 'first_party_or_other'
+             end family
+           from consulted
+         ), classified_sources as (
+           select event_id, last_attempt_error,
+             case
+               when lower(source_url) like 'https://meetup.com/%' or lower(source_url) like 'https://www.meetup.com/%' then 'meetup'
+               when lower(source_url) like 'https://luma.com/%' or lower(source_url) like 'https://www.luma.com/%' then 'luma'
+               when lower(source_url) like 'https://eventbrite.com/%' or lower(source_url) like 'https://www.eventbrite.com/%' then 'eventbrite'
+               else 'first_party_or_other'
+             end family
+           from event_sources
+           where lower(source_url) not like 'https://%.example.invalid/%'
+         ), metrics as (
+           select family, count(*) consultations, count(distinct run_id) consultation_runs,
+             0 stored_sources, 0 linked_sources, 0 latest_error_sources
+           from classified_consultations group by family
+           union all
+           select family, 0, 0, count(*),
+             sum(case when event_id is not null then 1 else 0 end),
+             sum(case when last_attempt_error is not null then 1 else 0 end)
+           from classified_sources group by family
+         )
+         select family, sum(consultations) consultations,
+           sum(consultation_runs) consultation_runs,
+           sum(stored_sources) stored_sources,
+           sum(linked_sources) linked_sources,
+           sum(latest_error_sources) latest_error_sources
+         from metrics group by family order by family`,
+      )
+      .all() as UnknownRecord[];
     return {
       runs,
       databaseState: {
@@ -408,6 +482,7 @@ export async function loadEvaluationInput(
         unlinkedSources: nonnegativeInteger(sourceCounts.unlinked_sources) ?? 0,
         publicationStatuses: numberRecord(publicationRows, "status"),
         sourceErrorCounts: numberRecord(sourceErrorRows, "error_code"),
+        sourcePortfolio: sourcePortfolioRecord(sourcePortfolioRows),
       },
       checkpoints: {
         filesRead: checkpoints.filesRead,
@@ -444,6 +519,38 @@ function dominantCategory(counts: Record<string, number>): string | null {
         rightCount - leftCount || leftName.localeCompare(rightName),
     )[0]?.[0] ?? null
   );
+}
+
+function summarizeSourcePortfolio(
+  portfolio: Record<string, SourceFamilyMetrics>,
+): UnknownRecord {
+  const familyMetrics: Record<string, UnknownRecord> = {};
+  let totalConsultations = 0;
+  let marketplaceConsultations = 0;
+  for (const [family, metrics] of Object.entries(portfolio).sort(
+    ([left], [right]) => left.localeCompare(right),
+  )) {
+    totalConsultations += metrics.consultations;
+    if (["meetup", "luma", "eventbrite"].includes(family))
+      marketplaceConsultations += metrics.consultations;
+    familyMetrics[family] = {
+      consultations: metrics.consultations,
+      consultation_runs: metrics.consultationRuns,
+      stored_sources: metrics.storedSources,
+      linked_sources: metrics.linkedSources,
+      linked_source_rate: ratio(metrics.linkedSources, metrics.storedSources),
+      latest_error_sources: metrics.latestErrorSources,
+    };
+  }
+  return {
+    total_consultations: totalConsultations,
+    marketplace_consultations: marketplaceConsultations,
+    marketplace_consultation_share: ratio(
+      marketplaceConsultations,
+      totalConsultations,
+    ),
+    family_metrics: familyMetrics,
+  };
 }
 
 function summarizeCohort(runs: EvaluationRun[]): UnknownRecord {
@@ -607,6 +714,28 @@ export function evaluateIngestionHistory(
   const recentLossCategory = dominantCategory(
     recentCohort.loss_category_counts as Record<string, number>,
   );
+  const sourcePortfolio = summarizeSourcePortfolio(
+    input.databaseState.sourcePortfolio,
+  );
+  const marketplaceShare = sourcePortfolio.marketplace_consultation_share as
+    number | null;
+  const familyMetrics = sourcePortfolio.family_metrics as Record<
+    string,
+    UnknownRecord
+  >;
+  const weakSourceFamily = Object.entries(familyMetrics)
+    .filter(
+      ([, metrics]) =>
+        (metrics.stored_sources as number) >= 3 &&
+        (metrics.linked_source_rate as number | null) !== null &&
+        (metrics.linked_source_rate as number) < 0.5,
+    )
+    .sort(
+      ([leftName, left], [rightName, right]) =>
+        (left.linked_source_rate as number) -
+          (right.linked_source_rate as number) ||
+        leftName.localeCompare(rightName),
+    )[0];
   const recommendations: UnknownRecord[] = [];
   if (runningRuns > 0)
     recommendations.push({
@@ -630,6 +759,19 @@ export function evaluateIngestionHistory(
       evidence: `The latest five terminal runs filled ${(recentFillRate * 100).toFixed(1)}% of requested candidate slots.`,
       next_experiment:
         "Compare bounded search-query strategies on one fixed window before changing extraction.",
+    });
+  if (weakSourceFamily)
+    recommendations.push({
+      focus: "source_family_conversion",
+      evidence: `${weakSourceFamily[0]} linked ${((weakSourceFamily[1].linked_source_rate as number) * 100).toFixed(1)}% of its stored source rows to events.`,
+      next_experiment: `Preserve the next bounded ${weakSourceFamily[0]} failure and replay it through the current capture and extraction boundary before expanding that source family.`,
+    });
+  if (marketplaceShare !== null && marketplaceShare >= 0.8)
+    recommendations.push({
+      focus: "source_portfolio_diversity",
+      evidence: `Marketplace listing platforms account for ${(marketplaceShare * 100).toFixed(1)}% of recorded listing consultations.`,
+      next_experiment:
+        "Compare one bounded first-party organizer cohort with the marketplace baseline before adding another broad source adapter.",
     });
   if (recentRepairRate !== null && recentRepairRate >= 0.25)
     recommendations.push({
@@ -677,6 +819,7 @@ export function evaluateIngestionHistory(
       candidate_slot_fill_rate: discoveryFillRate,
       usable_draft_write_rate_per_discovered_source: draftWriteRate,
     },
+    source_portfolio: sourcePortfolio,
     recent_cohort: recentCohort,
     compatibility: {
       repair_runs: repairRuns,
