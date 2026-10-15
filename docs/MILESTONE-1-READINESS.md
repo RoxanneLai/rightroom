@@ -75,16 +75,17 @@ This is reassuring but bounded. Only one replay case contains the exact original
 
 No cancellation or stale organizer page was found in this cohort. Freshness is not the same as suitability: Product Circle and Elevate fail the provisional price policy, Sprig has a likely role-access mismatch, and the first four still require a human attendance judgment.
 
-Only the two Luma URLs pass the current automated source-identity boundary. The five organizer-domain candidates broaden the research evidence but cannot enter ingestion today. That is a concrete source-coverage gap; it is not a reason to allowlist all five domains at once. A first-party domain should be added only after its stable individual-event URL pattern and capture behavior are tested.
+Only the two Luma URLs pass the current automated source-identity boundary. The five organizer-domain candidates broaden the research evidence but cannot enter ingestion today. The [first-party source-readiness spike](FIRST-PARTY-SOURCE-READINESS.md) found that Product Circle has the only sufficiently durable individual-event identity pattern, but its native capture remains unverified because the current execution environment blocks the domain before HTTP. No new domain was enabled. This is a concrete source-coverage gap; it is not a reason to allowlist all five domains at once.
 
 ## Recommended sequence
 
 1. Run the prepared unanchored human review of the seven candidates. Record `Yes`, `Maybe` or `No`, one main reason and an overall order before showing generated scores.
 2. Keep the existing scoring and parser behavior unchanged unless that review or a new captured failure exposes a narrow, repeatable mismatch.
 3. Resolve the paid-discovery spending policy before another paid acceptance attempt. The provisional attendance price bands do not answer the product's API-spending question.
-4. With separate approval, run one no-publication, fixed-window comparison between marketplace queries and a small first-party organizer set. Measure verified relevant leads, capture success and operator effort; do not add a broad source adapter first.
+4. Complete the single Product Circle native-capture preflight described in the source-readiness spike. Enable only that dated event family if it passes without new capture privileges or relaxed limits.
 5. Preserve and replay the next bounded Luma failure before expanding Luma volume or changing its adapter.
-6. Require at least three separately authorized discovery evaluations to meet the PRD's proposed yield and factual-quality gates before declaring Milestone 1 complete.
+6. After a safe first-party source exists, run one no-publication, fixed-window marketplace-versus-first-party comparison. Measure verified relevant leads, capture success and operator effort.
+7. Require at least three separately authorized discovery evaluations to meet the PRD's proposed yield and factual-quality gates before declaring Milestone 1 complete.
 
 ## What should not happen next
 
