@@ -28,6 +28,10 @@ The complete gate passed locally from a credential-free clean-room inventory:
 
 The public/private boundary audit found no private evidence field usage in application or component code. Dashboard and production-runtime tests deliberately inject private markers and assert that source content, raw payloads, drafts, privileged keys, and private URL parameters do not reach rendered public output. This remains local evidence, not a penetration test or a hosted access-control review.
 
+The complete gate was rerun against committed revision `e06eb17` after the Milestone 1 and first-party source-readiness documentation work. All ten steps passed in 37 seconds: source whitespace, formatting, route generation, lint, TypeScript, 318 offline tests, the production build, four compiled-page checks, 15 production-runtime checks and six disposable-Postgres runner tests containing 173 pgTAP assertions. The disposable database was removed and the normal database was not changed. The owner-only report and logs remain under ignored `codex-tmp/release-verification-nXbL3S/`.
+
+The runner reported `workspace_retained: true` because this execution host denied removal of two copied `components` directories after the checks. The retained ignored artifact is approximately 120 KB and contains clean source-copy remnants and verification logs, not credentials or local database contents. This is a disclosed host cleanup limitation rather than a failed release step; the working tree remained clean after the gate.
+
 ## What the gate establishes
 
 - The application can be built from a clean source inventory without local secrets, ignored data, or prior `.next` output.
