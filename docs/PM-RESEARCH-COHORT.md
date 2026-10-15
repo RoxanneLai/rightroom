@@ -35,7 +35,7 @@ The last three are useful boundary cases. Sprig has excellent research and peer-
 
 **Why it may be useful:** The organizer says the monthly meetup is for meeting fellow product managers, making connections, exploring job opportunities and discussing the tech industry. That is a more direct product-career and networking signal than a generic startup mixer.
 
-**Practical access:** Registration requires host approval and the Brooklyn address is hidden until approval. The organizer page does not expose the date, time or price in readable page text. Two current event indexes place it on October 17 at 2 PM and label it free, so those fields should be reconfirmed before any attendance decision: [FounderCal](https://foundercal.com/cities/nyc/meetups) and [Mimetic](https://events.trymimetic.com/events/crypto/nyc?v=crypto%2Ccmo%2Cecom%2Cpe%2Cea%2Cbio).
+**Practical access:** Registration requires host approval and the Brooklyn address is hidden until approval. The organizer page does not expose the date, time or price in readable page text. [FounderCal](https://foundercal.com/cities/nyc/meetups) currently places it on October 17 at 2 PM and labels it free. A previously consulted second index was unavailable during the October 14 follow-up, so those fields should be reconfirmed before any attendance decision.
 
 **Review prompt:** Does a product-community meetup with no formal learning agenda still clear the bar because the networking audience is unusually direct?
 
@@ -83,7 +83,7 @@ The last three are useful boundary cases. Sprig has excellent research and peer-
 
 **Why it may be useful:** Elevate advertises hands-on learning, peer roundtables, networking events and a large cross-functional audience. Its product roadmap and Product Lab are relevant, but the published role tracks center on operations, marketing, IT, sales, PMO and leadership rather than product management as a discipline.
 
-**Practical access:** The official pricing page lists General Admission tiers from $600 through $1,200, all above the user's ceiling. It is a large vendor conference, and the currently purchasable tier should be reconfirmed before quoting a checkout price. A free livestream covers only the opening keynote and provides no in-person networking substitute.
+**Practical access:** The official pricing page lists General Admission tiers from $600 through $1,200, all above the user's ceiling, and currently marks the $1,200 last-chance tier as on sale through October 28. It is a large vendor conference. A free livestream covers only the opening keynote and provides no in-person networking substitute.
 
 **Review prompt:** Is this an easy `No` because both audience focus and price are weaker than the smaller alternatives?
 
