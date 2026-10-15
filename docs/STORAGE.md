@@ -34,7 +34,9 @@ The dashboard then requires the local `SUPABASE_URL` and optional anonymous/publ
 
 ## Backups
 
-Stop the development server and any RightRoom CLI using the database before copying it. Copy `data/founder-radar.sqlite` to a private backup location. If `-wal` or `-shm` sidecar files remain, copy them with the database as one set. Restore only while no process has the database open.
+Use SQLite's backup API for an online, transactionally consistent copy. It includes committed WAL contents and avoids the incomplete snapshots that a raw database-file copy can produce while the application is running. RightRoom's release verification exercises this path against synthetic private evidence, verifies integrity and foreign keys, and then opens the copy read-only to confirm that relationships restore correctly.
+
+If you must make a manual filesystem copy, stop the development server and every RightRoom CLI using the database first. Copy `data/founder-radar.sqlite` to a private backup location. If `-wal` or `-shm` sidecar files remain, copy them with the database as one set. Restore only while no process has the database open.
 
 For a custom `SQLITE_DATABASE_PATH`, back up that path instead. Protect backups like credentials: they contain private evidence even though they do not contain the OpenRouter key.
 

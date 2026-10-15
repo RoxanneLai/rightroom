@@ -1,10 +1,11 @@
 import "server-only";
 import { chmod, mkdir, mkdtemp, stat, writeFile } from "node:fs/promises";
 import { join, resolve } from "node:path";
-import { backup, DatabaseSync } from "node:sqlite";
+import { DatabaseSync } from "node:sqlite";
 import { z } from "zod";
 import { readCareerTarget, careerSearchPlan } from "../career/profile.ts";
 import { readDatabaseSelection } from "../storage/config.ts";
+import { backupSqliteDatabase } from "../storage/sqlite-backup.ts";
 import { parseIngestionArgs } from "./cli.ts";
 import { readModelConfig, readOpenRouterKey } from "./local-config.ts";
 import { IngestionError, errorCode } from "./errors.ts";
@@ -195,13 +196,7 @@ async function backupPmDatabase(
   path: string,
   directory: string,
 ): Promise<void> {
-  const database = new DatabaseSync(path, { readOnly: true });
-  try {
-    await backup(database, join(directory, "before.sqlite"));
-  } finally {
-    database.close();
-  }
-  await chmod(join(directory, "before.sqlite"), 0o600);
+  await backupSqliteDatabase(path, join(directory, "before.sqlite"));
 }
 
 /** Snapshot only consulted sources/events; do not serialize headers or raw model replies. */

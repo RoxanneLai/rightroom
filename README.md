@@ -14,7 +14,7 @@ _Screenshot of the career sample edition. Events, people, scores, and availabili
 
 **Product decisions.** Start with a focused NYC product-management and technical-delivery profile. Rank events using explicit evidence for role fit, relevant people, interaction, domain fit, and practical access; show reasons and uncertainty rather than an unexplained score. Capture original listing text, reject incomplete or conflicting candidates, and require human review before publishing. Keep the default experience local-first with SQLite, no Docker, and a separate credential-free sample edition.
 
-**Result today.** A working career-first dashboard with browser-local attendance choices, configurable discovery pipeline, private draft review, stale-safe publication, and source-linked event cards. Live collection has produced drafts, and a manually checked career lead has been recovered and explicitly published. The code is covered by 313 deterministic offline tests plus production-page/runtime checks. The October 5 career expansion pilot produced one new private draft with canonical extraction and no repair. New scores conservatively limit weak role/networking evidence, with review warnings and event-scoped handling of technical demonstrations, product-practitioner audiences and advertised social agendas; repeatable discovery quality and ranking usefulness remain under evaluation. No user-impact or job-placement results are claimed.
+**Result today.** A working career-first dashboard with browser-local attendance choices, configurable discovery pipeline, private draft review, stale-safe publication, and source-linked event cards. Live collection has produced drafts, and a manually checked career lead has been recovered and explicitly published. The code is covered by 318 deterministic offline tests plus production-page/runtime checks. The October 5 career expansion pilot produced one new private draft with canonical extraction and no repair. New scores conservatively limit weak role/networking evidence, with review warnings and event-scoped handling of technical demonstrations, product-practitioner audiences and advertised social agendas; repeatable discovery quality and ranking usefulness remain under evaluation. No user-impact or job-placement results are claimed.
 
 **My contribution.** Roxanne defined the user problem, directed the shift from startup networking to career-event discovery, prioritized features and safeguards, and guided iterative implementation and validation with AI coding assistants. The code was developed through that AI-assisted collaboration.
 
@@ -158,6 +158,16 @@ This preserves the latest source snapshot and its original discovery-run attribu
 The server-only ingestion code lives in `lib/ingestion/`, its manual entry point is `scripts/ingest.ts`, and generated database types live in `lib/database.types.ts`. Ingestion remains separate from the read-only dashboard; page loads never make paid API calls.
 
 ## Verification
+
+The full clean-room release gate is:
+
+```bash
+npm run verify:release
+```
+
+It excludes ignored credentials and local data, regenerates route types, runs the application checks below from a clean source copy, rehearses a synthetic SQLite backup/restore, and finishes with the isolated disposable Postgres suite. It never resets the normal local database. See [hosted pilot readiness](docs/HOSTED-PILOT-READINESS.md) for the exact boundary and the remaining hosting, access, backup, monitoring, cost, and product decisions.
+
+Individual application checks remain available:
 
 ```bash
 npm run lint

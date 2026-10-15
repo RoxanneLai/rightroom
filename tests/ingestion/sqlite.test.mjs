@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
-import { mkdir, mkdtemp } from "node:fs/promises";
+import { mkdir, mkdtemp, stat } from "node:fs/promises";
 import { join } from "node:path";
+import { DatabaseSync } from "node:sqlite";
 import test from "node:test";
 import { loadDashboard } from "../../lib/dashboard/repository.ts";
 import { executeSqliteInspection } from "../../lib/ingestion/inspection.ts";
@@ -8,6 +9,10 @@ import { SqliteIngestionRepository } from "../../lib/ingestion/sqlite-repository
 import { executeSqliteReview } from "../../lib/review/repository.ts";
 import { runReviewCli } from "../../lib/review/cli.ts";
 import { readDatabaseSelection } from "../../lib/storage/config.ts";
+import {
+  backupSqliteDatabase,
+  verifySqliteBackup,
+} from "../../lib/storage/sqlite-backup.ts";
 import { openSqliteDatabase } from "../../lib/storage/sqlite.ts";
 import { importSupabaseSnapshot } from "../../lib/storage/supabase-import.ts";
 
@@ -285,6 +290,63 @@ test("SQLite preserves deduplication, evidence, reviews, publication safety, and
     1,
   );
   database.close();
+});
+
+test("SQLite backup and restore preserves committed private data and relationships", async () => {
+  const temporary = await temporaryDatabase();
+  const repository = new SqliteIngestionRepository(
+    temporary.path,
+    "openai/gpt-5.6-luna",
+    "medium",
+    "openai/gpt-5.6-luna",
+    "medium",
+  );
+  const runId = await repository.start({
+    from,
+    to: "2026-10-08T12:00:00.000Z",
+    limit: 1,
+  });
+  const saved = await repository.save(
+    runId,
+    source({ content_text: "Private committed backup evidence" }),
+    draft({ title: "Backup snapshot title" }),
+    from,
+  );
+  const backupPath = join(temporary.directory, "restored.sqlite");
+  await backupSqliteDatabase(temporary.path, backupPath);
+  const sourceDatabase = openSqliteDatabase(temporary.path);
+  sourceDatabase
+    .prepare("update events set title = ? where id = ?")
+    .run("Mutation after backup", saved.event_id);
+  sourceDatabase.close();
+  assert.deepEqual(verifySqliteBackup(backupPath), {
+    integrity: "ok",
+    schemaVersion: 2,
+    foreignKeyViolations: 0,
+  });
+  assert.equal((await stat(backupPath)).mode & 0o777, 0o600);
+  const restored = new DatabaseSync(backupPath, { readOnly: true });
+  try {
+    assert.deepEqual(
+      {
+        ...restored
+          .prepare(
+            `select e.title, s.event_id, s.discovered_by_run_id, s.content_text
+             from events e join event_sources s on s.event_id = e.id
+             where e.id = ?`,
+          )
+          .get(saved.event_id),
+      },
+      {
+        title: "Backup snapshot title",
+        event_id: saved.event_id,
+        discovered_by_run_id: runId,
+        content_text: "Private committed backup evidence",
+      },
+    );
+  } finally {
+    restored.close();
+  }
 });
 
 test("explicit Supabase import preserves IDs, relationships, evidence, runs, and review history", async () => {
