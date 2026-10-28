@@ -7,6 +7,7 @@ import { OpenRouterSearchProvider } from "../../lib/ingestion/openrouter-provide
 import { captureSourcePage } from "../../lib/ingestion/source-capture.ts";
 import { SqliteIngestionRepository } from "../../lib/ingestion/sqlite-repository.ts";
 import { runIngestion } from "../../lib/ingestion/run.ts";
+import { sourceIdentity } from "../../lib/ingestion/sources.ts";
 import { candidate, fact, options, report, url } from "./helpers.mjs";
 
 export const clock = new Date("2026-09-01T12:00:00Z");
@@ -170,13 +171,22 @@ function offlineCapture(fixtures, captureStatus) {
       now: () => new Date(clock),
       resolve: async (hostname) => {
         resolutions.push(hostname);
-        assert.equal(hostname, "luma.com");
+        assert.ok(
+          fixtures.some(
+            (item) =>
+              new URL(item.sourceUrl).hostname.replace(/^www\./, "") ===
+              hostname.replace(/^www\./, ""),
+          ),
+          "only an explicitly supplied synthetic hostname may resolve",
+        );
         return [{ address: "93.184.216.34", family: 4 }];
       },
       request: async (requestedUrl) => {
         captures.push(requestedUrl.href);
         const item = fixtures.find(
-          (item) => item.sourceUrl === requestedUrl.href,
+          (item) =>
+            sourceIdentity(item.sourceUrl)?.source_url ===
+            sourceIdentity(requestedUrl.href)?.source_url,
         );
         assert.ok(
           item,
@@ -205,6 +215,8 @@ export async function ingest({
   repair,
   captureStatus = 200,
   intent = "refresh",
+  searchFocus,
+  sourceScope,
 }) {
   const { provider, requests } = offlineProvider(
     content,
@@ -221,7 +233,14 @@ export async function ingest({
       ...options,
       profile,
       intent,
-      ...(profile === "career" ? { searches: 3, career_target: target } : {}),
+      ...(profile === "career"
+        ? {
+            searches: 3,
+            career_target: target,
+            ...(searchFocus ? { search_focus: searchFocus } : {}),
+            ...(sourceScope ? { source_scope: sourceScope } : {}),
+          }
+        : {}),
     },
     {
       provider,

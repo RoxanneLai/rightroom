@@ -357,6 +357,26 @@ function captureCounts(metadata: unknown): {
   return { succeeded, failed };
 }
 
+function storedSearchOptions(value: unknown): SearchOptions {
+  const parsed = parseJson(value);
+  if (!isRecord(parsed)) throw new Error("comparison_run_mismatch");
+  try {
+    return validateSearchOptions({
+      from: parsed.from,
+      to: parsed.to,
+      limit: parsed.limit,
+      profile: parsed.profile,
+      searches: parsed.searches,
+      intent: parsed.intent,
+      search_focus: parsed.search_focus,
+      source_scope: parsed.source_scope,
+      career_target: parsed.career_target,
+    });
+  } catch {
+    throw new Error("comparison_run_mismatch");
+  }
+}
+
 function storedRun(
   row: UnknownRecord | undefined,
   expectedId: string,
@@ -368,12 +388,7 @@ function storedRun(
     !TERMINAL_STATUSES.has(String(row.status))
   )
     throw new Error("comparison_run_unavailable");
-  let parameters: SearchOptions;
-  try {
-    parameters = validateSearchOptions(parseJson(row.search_parameters));
-  } catch {
-    throw new Error("comparison_run_mismatch");
-  }
+  const parameters = storedSearchOptions(row.search_parameters);
   const summaryContainer = parseJson(row.metadata);
   const summary = parseSafeRunSummary(
     isRecord(summaryContainer) ? summaryContainer.summary : null,

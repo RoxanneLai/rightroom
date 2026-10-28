@@ -29,6 +29,43 @@ Run the two arms separately and retain their run UUIDs. Do not retry or widen a 
 
 Source scope is enforced at five boundaries: hosted-search domains, research instructions, citation acceptance, historical exclusion reads and final local source selection. Out-of-scope URLs cannot consume candidate slots or contaminate one arm's exclusion cap.
 
+## Offline dress rehearsal
+
+Before considering a paid pair, run:
+
+```bash
+npm run ingest:compare:rehearse
+```
+
+This credential-free test sends deliberate marketplace and Product Circle decoys through opposite arms, runs both real ingestion paths against a newly created ignored SQLite database, and passes their actual run UUIDs to the read-only evaluator. It requires both arms to create private drafts only, retain their source scopes, reject cross-scope candidates, leave the database byte-for-byte unchanged during evaluation, write an owner-only aggregate report under `codex-tmp/`, and make zero real network or publication calls.
+
+The rehearsal proves integration and safety boundaries with synthetic evidence. It does not exercise OpenRouter, current event pages, live model behavior, pricing, relevance quality or discovery yield.
+
+## Operator checklist for a later live pair
+
+Before either arm:
+
+1. Pull the intended commit and confirm the worktree is clean.
+2. Run `npm run ingest:compare:rehearse` and keep any failure as a blocker.
+3. Generate one paired plan with an explicit future window; do not edit one arm independently.
+4. Confirm the selected SQLite database and create a recoverable backup using the storage guide.
+5. Review current model and hosted-search pricing, set a separate approved ceiling for each arm, and obtain fresh authorization. A prior run or this rehearsal is not approval.
+6. Confirm both commands can start while their shared `--from` timestamp is within the live-window freshness limit.
+
+During collection:
+
+1. Run the marketplace and Product Circle commands separately with their exact planned arguments, ordinary paid opt-in and `--live`.
+2. Record each terminal run UUID, status and actual start/end time. Do not retry, widen the window or substitute sources when an arm returns zero.
+3. Do not publish, recover or manually rewrite either arm before evaluation.
+
+After collection:
+
+1. Inspect both runs and review their private drafts with the same relevance, access, price and evidence rubric.
+2. Record actual review minutes separately for each arm.
+3. Run the read-only evaluator with both UUIDs and review-time values.
+4. Preserve the aggregate report and a short miss analysis; keep private source evidence out of shared artifacts.
+5. Treat the pair as one learning observation, not proof of repeatability or permission for another paid run.
+
 ## Read-only evaluation
 
 After both separately approved runs reach a terminal state in the same SQLite database:
