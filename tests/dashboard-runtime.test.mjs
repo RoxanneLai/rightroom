@@ -285,9 +285,9 @@ test("homepage and career alias rank published career assessments without leakin
       html.indexOf("Higher career fit example") <
         html.indexOf("Published career example"),
     );
-    assert.match(html, /Career fit/);
+    assert.match(html, /PM relevance/);
     assert.match(html, /Hiring/);
-    assert.match(html, /href="\/events"[^>]*>All events/);
+    assert.match(html, /href="\/events"[^>]*>All published events/);
     assert.match(
       html,
       /<a\b(?=[^>]*href="\/sample\/career")(?=[^>]*class="edition-link")[^>]*>/,
@@ -302,10 +302,10 @@ test("homepage and career alias rank published career assessments without leakin
   assert.match((await page("/events")).html, /Unassessed founder event/);
   const callsBefore = databaseCalls;
   const sample = await page("/sample/career");
-  assert.match(sample.html, /fictional career shortlist/i);
+  assert.match(sample.html, /fictional technical-PM shortlist/i);
   assert.match(
     sample.html,
-    /<strong>03<\/strong>\s*<span>with career-fit scores<\/span>/,
+    /<strong>03<\/strong>\s*<span>with PM-relevance scores<\/span>/,
   );
   assert.match(
     sample.html,
@@ -358,7 +358,7 @@ test("career cards show provisional USD price fit without classifying unknown or
   }
 });
 
-test("career attendance warnings precede fit explanations with accessible headings and no private evidence", async () => {
+test("career cards put practical facts and attendance warnings before experimental score details", async () => {
   const expected = [
     ["eligibility_unknown", "Attendance eligibility not confirmed"],
     ["approval_required", "Attendance requires approval"],
@@ -413,9 +413,18 @@ test("career attendance warnings precede fit explanations with accessible headin
         ),
       );
       assert.ok(
-        card.indexOf("Career fit score: 80 out of 100") < card.indexOf(section),
+        card.indexOf("Experimental PM relevance score: 80 out of 100") <
+          card.indexOf(section),
       );
-      assert.ok(card.indexOf(section) < card.indexOf("Why this room fits"));
+      assert.ok(card.indexOf("event-details") < card.indexOf(section));
+      assert.ok(card.indexOf("event-cost") < card.indexOf(section));
+      assert.ok(
+        card.indexOf(section) < card.indexOf("Why it may fit this pilot"),
+      );
+      assert.ok(
+        card.indexOf("Why it may fit this pilot") <
+          card.indexOf("How the experimental score was calculated"),
+      );
       assert.ok(
         card.indexOf(section) < card.indexOf("View event &amp; registration"),
       );
@@ -428,7 +437,7 @@ test("career attendance warnings precede fit explanations with accessible headin
       }
       assert.match(
         section,
-        /Career fit and open registration do not confirm attendance eligibility/,
+        /PM relevance and open registration do not confirm attendance eligibility/,
       );
       assert.doesNotMatch(
         section,
@@ -470,7 +479,7 @@ test("career cards without attendance cautions still prompt a check without inve
       section,
       /<ul|Eligibility confirmed|Attendance restrictions apply|Attendance eligibility not confirmed|Hiring opportunities/,
     );
-    assert.match(html, /Career fit score: 80 out of 100/);
+    assert.match(html, /Experimental PM relevance score: 80 out of 100/);
   }
 });
 
@@ -482,14 +491,14 @@ test("founder-only cards retain their original presentation without a career att
   assert.match(html, /Registration status not listed/);
   assert.doesNotMatch(
     html,
-    /career-attendance|Attendance &amp; eligibility|Career fit score/,
+    /career-attendance|Attendance &amp; eligibility|PM relevance score/,
   );
 });
 
 test("career homepage distinguishes an empty career shortlist and retries its own edition", async () => {
   responseRows = [upcomingRow({ title: "Founder-only published listing" })];
   const empty = await page("/");
-  assert.match(empty.html, /No published career events yet/);
+  assert.match(empty.html, /No current technical-PM events yet/);
   assert.match(empty.html, /Browse all published events/);
   assert.match(empty.html, /href="\/sample\/career"/);
   assert.doesNotMatch(empty.html, /Founder-only published listing|<article\b/);
@@ -528,7 +537,7 @@ test("runtime configuration is read at request time without freezing it into the
   process.env.SUPABASE_ANON_KEY = "";
   const callsBefore = databaseCalls;
   const { html } = await page();
-  assert.match(html, /The event feed is not connected yet/);
+  assert.match(html, /This edition isn’t available yet/);
   assert.doesNotMatch(html, /<article\b/);
   assert.equal(databaseCalls, callsBefore);
   process.env.SUPABASE_URL = databaseUrl;
@@ -546,7 +555,7 @@ test("a fresh SQLite-backed career homepage needs no Supabase configuration", as
   process.env.SQLITE_DATABASE_PATH = path;
   try {
     const { html } = await page("/");
-    assert.match(html, /No published career events yet/);
+    assert.match(html, /No current technical-PM events yet/);
     assert.match(html, /Browse all published events/);
     assert.doesNotMatch(
       html,
@@ -594,7 +603,7 @@ test("browser requests stream edition-specific loading before career and all-eve
   ];
   try {
     for (const [route, label] of [
-      ["/", "Career fit"],
+      ["/", "PM relevance"],
       ["/events", "Score ↓"],
     ]) {
       const response = await fetch(appUrl + route, {

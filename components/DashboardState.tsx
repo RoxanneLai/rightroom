@@ -10,12 +10,12 @@ const messages = {
   empty: {
     title: "No published events yet",
     description:
-      "There are no published NYC events starting in the next 30 days. Discovered drafts stay private until they are explicitly published.",
+      "RightRoom has not published any NYC events in the next 30 days. Explore the fictional demo while the next edition is reviewed.",
   },
   unconfigured: {
-    title: "The event feed is not connected yet",
+    title: "This edition isn’t available yet",
     description:
-      "Connect the local database to see published events here. You can still explore the clearly labeled sample edition.",
+      "The published event feed has not been prepared. You can still explore the clearly labeled fictional demo.",
   },
   unavailable: {
     title: "The event feed is temporarily unavailable",
@@ -44,12 +44,12 @@ export function DashboardState({
       </span>
       <h3>
         {career && status === "empty"
-          ? "No published career events yet"
+          ? "No current technical-PM events yet"
           : message.title}
       </h3>
       <p>
         {career && status === "empty"
-          ? "There are no published career events starting in the next 30 days. Other published events may be available in All events; discovered drafts stay private until explicitly published."
+          ? "RightRoom has not published any technical-PM events in the next 30 days. Explore the fictional demo while the next pilot edition is reviewed."
           : message.description}
       </p>
       {status !== "loading" && (

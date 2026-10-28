@@ -3,9 +3,9 @@ import { Dashboard } from "@/components/Dashboard";
 import { getCareerSampleEvents } from "@/lib/career/sample";
 
 export const metadata: Metadata = {
-  title: "RightRoom — Career sample",
+  title: "RightRoom — Technical-PM demo",
   description:
-    "Fictional career-event examples. No live listings, registrations or personalized job predictions.",
+    "Fictional technical-PM event examples. No live listings, registrations or personalized job predictions.",
   robots: { index: false, follow: false },
 };
 

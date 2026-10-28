@@ -39,8 +39,8 @@ export function CareerAttendance({
         </p>
       )}
       <p>
-        Check the listing for current entry requirements and availability.
-        Career fit and open registration do not confirm attendance eligibility.
+        Check the listing for current entry requirements and availability. PM
+        relevance and open registration do not confirm attendance eligibility.
       </p>
     </section>
   );

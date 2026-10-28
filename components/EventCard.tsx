@@ -62,23 +62,15 @@ export function EventCard({
           {event.careerAssessment ? (
             <div
               className="career-score"
-              aria-label={`Career fit score: ${event.careerAssessment.score} out of 100`}
+              aria-label={`Experimental PM relevance score: ${event.careerAssessment.score} out of 100`}
             >
               <strong>{event.careerAssessment.score}</strong>
-              <span>Career fit</span>
+              <span>PM relevance</span>
             </div>
           ) : (
             <ScoreBadge score={event.networkingScore} prominent />
           )}
         </div>
-        {event.careerAssessment && (
-          <CareerAttendance
-            assessment={event.careerAssessment}
-            currencyCode={event.currencyCode}
-            eventId={event.id}
-            priceAmountCents={event.priceAmountCents}
-          />
-        )}
         <div className="event-details">
           <p>
             <CalendarDays size={15} aria-hidden="true" />
@@ -89,6 +81,31 @@ export function EventCard({
             <span>{location || "Venue not listed · New York City"}</span>
           </p>
         </div>
+        <div className="event-footer">
+          {!event.careerAssessment && (
+            <div className="score-group">
+              <Users size={14} aria-hidden="true" />
+              <ScoreBadge score={event.founderScore} label="Founder" />
+              <span className="score-divider" />
+              <ScoreBadge score={event.investorScore} label="Investor" />
+            </div>
+          )}
+          <div className="event-cost">
+            <Ticket size={14} aria-hidden="true" />
+            <strong>
+              {formatStoredPrice(event.priceAmountCents, event.currencyCode)}
+            </strong>
+            {event.source && <span>via {event.source}</span>}
+          </div>
+        </div>
+        {event.careerAssessment && (
+          <CareerAttendance
+            assessment={event.careerAssessment}
+            currencyCode={event.currencyCode}
+            eventId={event.id}
+            priceAmountCents={event.priceAmountCents}
+          />
+        )}
         {event.careerAssessment ? (
           <CareerSummary assessment={event.careerAssessment} />
         ) : (
@@ -110,23 +127,6 @@ export function EventCard({
             <span>Potential downside</span> {event.potentialDownside}
           </p>
         )}
-        <div className="event-footer">
-          {!event.careerAssessment && (
-            <div className="score-group">
-              <Users size={14} aria-hidden="true" />
-              <ScoreBadge score={event.founderScore} label="Founder" />
-              <span className="score-divider" />
-              <ScoreBadge score={event.investorScore} label="Investor" />
-            </div>
-          )}
-          <div className="event-cost">
-            <Ticket size={14} aria-hidden="true" />
-            <strong>
-              {formatStoredPrice(event.priceAmountCents, event.currencyCode)}
-            </strong>
-            {event.source && <span>via {event.source}</span>}
-          </div>
-        </div>
       </div>
       <div className="event-status-bar">
         <span

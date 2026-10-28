@@ -241,7 +241,7 @@ button:focus-visible {
   justify-content: space-between;
   gap: 24px;
   align-items: end;
-  padding: 35px 0 30px;
+  padding: 25px 0 20px;
 }
 .eyebrow {
   font-size: 10px;
@@ -263,7 +263,7 @@ button:focus-visible {
 }
 h1 {
   margin-top: 12px;
-  font-size: clamp(40px, 4.6vw, 62px);
+  font-size: clamp(38px, 4vw, 54px);
   line-height: 1.04;
   letter-spacing: -2.8px;
   font-weight: 500;
@@ -301,7 +301,7 @@ h1 > span {
   display: flex;
   align-items: center;
   gap: 27px;
-  padding: 21px 0;
+  padding: 14px 0;
   border-block: 1px solid #daddd2;
 }
 .summary-strip > div {
@@ -559,7 +559,7 @@ h1 > span {
   text-wrap: balance;
 }
 .organizer {
-  font-size: 10px;
+  font-size: 12px;
   color: #788074;
   margin-top: 7px;
 }
@@ -605,7 +605,7 @@ h1 > span {
   display: grid;
   gap: 8px;
   color: #657064;
-  font-size: 11px;
+  font-size: 13px;
   line-height: 1.5;
 }
 .event-details p {
@@ -628,7 +628,7 @@ h1 > span {
   display: flex;
   align-items: center;
   gap: 7px;
-  font-size: 10px;
+  font-size: 13px;
   font-weight: 600;
   color: #4d6842;
 }
@@ -636,13 +636,13 @@ h1 > span {
   flex-shrink: 0;
 }
 .recommendation p {
-  font-size: 11px;
-  line-height: 1.75;
+  font-size: 13px;
+  line-height: 1.65;
   color: #5b6953;
   margin-top: 7px;
 }
 .downside {
-  font-size: 10px;
+  font-size: 12px;
   color: #777a70;
   line-height: 1.7;
   margin-top: 11px;
@@ -666,7 +666,7 @@ h1 > span {
   display: flex;
   align-items: center;
   gap: 6px;
-  font-size: 10px;
+  font-size: 12px;
   color: #687463;
 }
 .score-inline strong {
@@ -682,7 +682,7 @@ h1 > span {
   gap: 5px;
 }
 .event-cost strong {
-  font-size: 11px;
+  font-size: 13px;
   color: #45583d;
 }
 .event-cost > span {
@@ -697,8 +697,8 @@ h1 > span {
   align-items: center;
   justify-content: space-between;
   gap: 8px;
-  padding: 9px 25px;
-  font-size: 9px;
+  padding: 12px 25px;
+  font-size: 12px;
   color: #7e8478;
 }
 .registration {
@@ -707,10 +707,38 @@ h1 > span {
   gap: 5px;
 }
 .event-status-bar a {
-  color: #45583d;
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 9px 13px;
+  border-radius: 6px;
+  background: #244138;
+  color: #fff;
   font-weight: 700;
-  text-decoration: underline;
-  text-underline-offset: 3px;
+  text-decoration: none;
+}
+
+.decision-caution {
+  color: #5d604f !important;
+}
+
+.career-score-details {
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid #dce3d5;
+}
+
+.career-score-details summary {
+  color: #385547;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.career-score-details summary:focus-visible {
+  outline: 3px solid #567128;
+  outline-offset: 4px;
+  border-radius: 3px;
 }
 .registration > span {
   width: 4px;
@@ -1008,7 +1036,7 @@ h1 > span {
     margin-top: 2px;
   }
   .dashboard-intro {
-    padding: 28px 0;
+    padding: 22px 0;
   }
   h1 {
     font-size: 49px;
@@ -1041,7 +1069,7 @@ h1 > span {
   }
   .event-status-bar {
     padding-inline: 16px;
-    font-size: 8px;
+    font-size: 12px;
   }
   .event-footer {
     gap: 13px;

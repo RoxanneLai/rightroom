@@ -81,13 +81,13 @@ export function Dashboard({
             </Link>
             <nav className="edition-nav" aria-label="Event editions">
               <Link href="/" prefetch={false}>
-                Career events
+                Technical-PM events
               </Link>
               <Link href="/events" prefetch={false}>
-                All events
+                All published events
               </Link>
               <Link href="/sample/career" prefetch={false}>
-                Career sample
+                Technical-PM demo
               </Link>
             </nav>
           </div>
@@ -105,7 +105,7 @@ export function Dashboard({
               <>
                 <strong>
                   {career
-                    ? "A fictional career shortlist."
+                    ? "A fictional technical-PM shortlist."
                     : "The original startup proof of concept."}
                 </strong>{" "}
                 Fictional events, sample scores & availability. These are not
@@ -114,12 +114,14 @@ export function Dashboard({
             ) : (
               <>
                 <strong>
-                  {career ? "Reviewed career events." : "Reviewed NYC events."}
+                  {career
+                    ? "Reviewed technical-PM events."
+                    : "Reviewed NYC events."}
                 </strong>{" "}
-                Only reviewed, published listings appear here. Career-profile
+                Only reviewed, published listings appear here. The shared
                 {career
-                  ? " ranking explains the evidence behind each pick."
-                  : " picks have a separate career view."}
+                  ? " pilot profile explains the evidence behind each pick."
+                  : " technical-PM picks have a separate view."}
               </>
             )}
           </p>
@@ -135,30 +137,23 @@ export function Dashboard({
           <div>
             <p className="eyebrow">
               <span />
-              THE NYC CAREER-EVENT SHORTLIST
+              THE NYC TECHNICAL-PM SHORTLIST
             </p>
             <h1 id="page-title">
-              Less noise.
-              <br />
-              <span>Better rooms.</span>
+              Less noise. <span>Better rooms.</span>
             </h1>
             <p className="intro-description">
-              Find the events that move your career forward.
-              <br className="sm:hidden" /> Meet relevant people, in person.
+              Choose an in-person event worth your limited networking time.
+              <br className="sm:hidden" /> See relevance, access, and
+              uncertainty before you commit.
             </p>
           </div>
           <div className="edition-note">
             <span className="eyebrow">
               {sample ? "THE SAMPLE EDITION" : "THE UPCOMING EDITION"}
             </span>
-            <p>
-              {sample
-                ? career
-                  ? "October 1–3, 2026"
-                  : "September 1–6, 2026"
-                : "The next 30 days"}
-            </p>
-            <span>For job seekers making their next move.</span>
+            <p>{sample ? "Fictional upcoming examples" : "The next 30 days"}</p>
+            <span>For technical professionals exploring PM roles.</span>
           </div>
         </section>
         <div
@@ -175,7 +170,7 @@ export function Dashboard({
             <strong>{count(sample && !career ? newCount : scoredCount)}</strong>
             <span>
               {career
-                ? "with career-fit scores"
+                ? "with PM-relevance scores"
                 : sample
                   ? "marked new"
                   : "with networking scores"}
@@ -200,24 +195,27 @@ export function Dashboard({
             <div className="section-heading">
               <div>
                 <h2 id="picks-heading">
-                  Your shortlist<span>{countsKnown ? events.length : "—"}</span>
+                  {career ? "RightRoom’s pilot shortlist" : "Published events"}
+                  <span>{countsKnown ? events.length : "—"}</span>
                 </h2>
                 <p>
-                  {sample
-                    ? "A few promising rooms. A reason for every pick."
-                    : "Upcoming NYC events. Unknown details stay unknown."}
+                  {career
+                    ? "Ranked for one shared technical-PM profile—not personalized to each visitor."
+                    : sample
+                      ? "A few promising rooms. A reason for every pick."
+                      : "Upcoming NYC events. Unknown details stay unknown."}
                 </p>
               </div>
               <span className="sort-label">
                 <ArrowDownWideNarrow size={15} aria-hidden="true" />
                 {career
-                  ? "Career fit ↓ · then date"
+                  ? "PM relevance ↓ · then date"
                   : sample
                     ? "Networking score ↓"
                     : "Score ↓ · unscored by date"}
               </span>
             </div>
-            {result.status === "ready" || result.status === "empty" ? (
+            {result.status === "ready" ? (
               <>
                 <PersonalShortlist
                   key={attendanceScope}
@@ -238,11 +236,13 @@ export function Dashboard({
                   </p>
                 )}
               </>
+            ) : result.status === "empty" ? (
+              <DashboardState status="empty" career={career} />
             ) : (
               <DashboardState status={result.status} career={career} />
             )}
           </section>
-          <aside className="sidebar" aria-label="About your shortlist">
+          <aside className="sidebar" aria-label="About the shortlist">
             <section className="field-note">
               <span className="eyebrow">THE RIGHTROOM FILTER</span>
               <ArrowUpRight
@@ -273,21 +273,23 @@ export function Dashboard({
                 aria-labelledby="career-guide-title"
               >
                 <p className="eyebrow">READING THE SIGNAL</p>
-                <h2 id="career-guide-title">What makes a useful room?</h2>
+                <h2 id="career-guide-title">
+                  What makes an event useful for this pilot?
+                </h2>
                 <p>
                   Role fit, relevant people, interaction, domain fit, and
                   practical access contribute to the ranking. Each card shows
                   its components and cautions.
                 </p>
                 <p>
-                  These picks use a product-management and technical-delivery
-                  target profile. A tech talk can qualify without founders or
-                  advertised jobs.
+                  These picks use one shared profile for technical professionals
+                  exploring product-management and technical-PM roles. A tech
+                  talk can qualify without founders or advertised jobs.
                 </p>
                 <p className="guide-footnote">
                   {sample
                     ? "All events and assessments here are fictional illustrations."
-                    : "Scores reflect supported details and human review. They do not predict a job offer or guarantee access to a speaker."}
+                    : "Experimental PM-relevance scores reflect supported details and human review. They are not personalized, do not predict a job offer, and do not guarantee access."}
                 </p>
               </section>
             ) : (

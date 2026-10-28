@@ -2,8 +2,18 @@ import { getSampleEvents } from "../dashboard/sample.ts";
 import type { DashboardEvent } from "../dashboard/types.ts";
 import { careerAssessmentSchema } from "./contracts.ts";
 
+const DAY_MILLISECONDS = 86_400_000;
+
+function sampleStart(reference: Date, dayOffset: number): string {
+  const start = new Date(reference.getTime() + dayOffset * DAY_MILLISECONDS);
+  start.setUTCHours(22, 0, 0, 0);
+  return start.toISOString();
+}
+
 /** Entirely fictional examples; no provider, credential or database access. */
-export function getCareerSampleEvents(): DashboardEvent[] {
+export function getCareerSampleEvents(
+  reference = new Date(),
+): DashboardEvent[] {
   const base = getSampleEvents()[0];
   return [
     {
@@ -84,7 +94,7 @@ export function getCareerSampleEvents(): DashboardEvent[] {
     id: `career-sample-${index}`,
     title: example.title,
     organizer: example.organizer,
-    startsAt: `2026-10-0${index + 1}T22:00:00Z`,
+    startsAt: sampleStart(reference, index + 1),
     endsAt: null,
     priceAmountCents: null,
     currencyCode: null,
