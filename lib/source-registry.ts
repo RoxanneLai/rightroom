@@ -1,12 +1,17 @@
 import { z } from "zod";
 import configured from "../config/event-sources.json" with { type: "json" };
 
+const identityPatternSchema = z.enum([
+  "W[0-9]{10}",
+  "[a-z]+(?:-[a-z]+)*-(?:january|february|march|april|may|june|july|august|september|october|november|december)-[0-9]{4}",
+]);
+
 const entrySchema = z
   .object({
     host: z.string().regex(/^[a-z0-9.-]+\.[a-z]{2,}$/),
     prefix: z.string().regex(/^\/[a-z0-9/-]+$/),
     identity_parameter: z.literal("eventId").nullable(),
-    identity_pattern: z.literal("W[0-9]{10}").optional(),
+    identity_pattern: identityPatternSchema.optional(),
   })
   .strict()
   .refine(

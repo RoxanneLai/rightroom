@@ -1,6 +1,12 @@
-# First-party source readiness spike — October 14, 2026
+# First-party source readiness — October 14–28, 2026
 
-## Decision
+## October 28 implementation decision
+
+Product Circle's strict dated event family is now enabled after an owner-run native capture passed every prepared condition. The accepted family is limited to lowercase `/events/<city>-<month>-<four-digit-year>` paths on `productcircle.co`; optional `www` is a retrieval alias only. The full suffix is the external identity.
+
+The implementation updates JavaScript identity and public-link projection together with an additive PostgreSQL migration. Synthetic tests cover identity, aliases, tracking removal, distinct editions, deduplication, same-identity redirects, changed-edition rejection, unsafe paths, and JavaScript/PostgreSQL parity. It does not enable the other four organizer domains, run paid discovery, ingest or publish an event, or apply the migration to an existing database.
+
+## October 14 spike decision
 
 No new organizer domain is enabled by this spike. Product Circle is the only candidate with a sufficiently narrow, durable individual-event URL family, but the application's guarded native capture could not be verified from the current workspace. The integration therefore remains a prepared candidate rather than an enabled source.
 
@@ -26,9 +32,9 @@ Product Circle's current event directory exposes separate dated routes for New Y
 
 The other four candidates do not currently justify an exception. A readable page and a relevant event are necessary but insufficient: the registry must distinguish one immutable event from a directory, recurring campaign or mutable city landing page before that URL can become stored identity or a public registration link.
 
-## Prepared Product Circle boundary
+## Implemented Product Circle boundary
 
-If a future native preflight succeeds, the smallest supportable rule is:
+The successful preflight authorized only this smallest supportable rule:
 
 - exact host `productcircle.co`, with optional `www` only as a retrieval alias;
 - exact `/events/` prefix;
@@ -38,11 +44,13 @@ If a future native preflight succeeds, the smallest supportable rule is:
 - private and tracking parameters removed before storage or retrieval; and
 - redirects allowed only when they preserve the same canonical dated event.
 
-The JavaScript source identity, public-link projection and optional Supabase `public_listing_url` function must change together. Synthetic identity, redirect, deduplication and JavaScript/PostgreSQL parity tests must accompany the change. Enabling only the JavaScript registry would leave the optional Supabase publication boundary inconsistent.
+The JavaScript source identity, public-link projection and optional Supabase `public_listing_url` function change together. Synthetic identity, redirect, deduplication and JavaScript/PostgreSQL parity tests accompany the change. The existing capture size, redirect, DNS, TLS, content, timeout and no-browser rules remain unchanged.
 
-## Required proof before implementation
+## Native proof — completed October 28
 
-Run exactly one free native capture of the current New York page from an environment allowed to reach the domain. It must:
+The Codex executor remained blocked by its network allowlist before HTTP. The repository owner therefore ran the prepared free preflight in a normal local Terminal, using the same native capture implementation and limits. It returned HTTP 200, `text/html`, 167,157 response bytes, zero redirects and 9,025 normalized text characters. The text exposed the Product Circle title, November 13, 2026 date and $579 price without login, browser rendering, cookies, credentials or limit changes.
+
+The required conditions were:
 
 1. preserve the canonical dated identity through no more than two redirects;
 2. return supported public text content under the existing one-megabyte response limit;
@@ -50,8 +58,8 @@ Run exactly one free native capture of the current New York page from an environ
 4. expose the title, November 13, 2026 date and $579 price in the captured text; and
 5. require no login, browser rendering, cookies, credentials or limit changes.
 
-If any condition fails, keep the domain disabled. Do not add a browser fallback or relax global capture limits for this source. If all conditions pass, implement only the Product Circle dated family and rerun the complete offline ingestion, review, type, lint and optional disposable-PostgreSQL verification before considering a paid discovery comparison.
+All conditions passed. There is still no browser fallback, proxy path or relaxed global capture limit. A future page outside the dated identity family remains unsupported, and any future capture that fails the ordinary safeguards must fail closed.
 
 ## Milestone implication
 
-This spike narrows the first-party source gap but does not improve current discovery coverage: only the two Luma cohort URLs remain ingestible. The next autonomous first-party implementation step is blocked on one environment-level native-capture preflight. The separate seven-event human review and paid-discovery budget decision remain unchanged.
+The source-identity gap is narrower: Product Circle's dated family can now participate in model-directed discovery and ordinary private capture/review. This is capability, not observed yield. No paid marketplace-versus-first-party comparison has run, no Product Circle draft exists from this change, and the seven-event human review and paid-discovery budget decision remain separate.

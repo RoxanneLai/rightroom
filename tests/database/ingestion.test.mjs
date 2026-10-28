@@ -140,6 +140,44 @@ test("AICamp URL validation has actual PostgreSQL, ingestion and public-link par
   }
 });
 
+test("Product Circle validation has PostgreSQL, ingestion and public-link parity", async () => {
+  const base = "https://productcircle.co/events/";
+  const canonical = base + "new-york-november-2026";
+  const cases = [
+    [canonical, canonical],
+    [canonical + "/?token=PRIVATE&utm_source=test#fragment", canonical],
+    [canonical.replace("https://", "https://www."), canonical],
+    [base + "boston-november-2026", base + "boston-november-2026"],
+    ...[
+      "https://productcircle.co/events",
+      base,
+      base + "nyc",
+      base + "new-york-2026",
+      base + "new-york-summer-2026",
+      base + "New-York-November-2026",
+      base + "new-york-november-26",
+      base + "new-york-november-2026/extra",
+      base + "new-york-november-2026-extra",
+      "https://productcircle.co/community",
+      canonical.replace("productcircle.co", "events.productcircle.co"),
+      canonical.replace("productcircle.co", "productcircle.co.evil.test"),
+      canonical.replace("https:", "http:"),
+      canonical.replace("https://", "https://user:PRIVATE@"),
+      canonical.replace("productcircle.co", "productcircle.co:8443"),
+    ].map((url) => [url, null]),
+  ];
+  for (const [url, expected] of cases) {
+    assert.equal(publicListingUrl(url), expected, url);
+    assert.equal(sourceIdentity(url)?.source_url ?? null, expected, url);
+    const actual = await sql(
+      "select coalesce(public.public_listing_url('" +
+        url.replaceAll("'", "''") +
+        "'), '<NULL>');",
+    );
+    assert.equal(actual.trim(), expected ?? "<NULL>", url);
+  }
+});
+
 test("concurrent repeat ingestion writes one source and one linked draft", async () => {
   const runId = randomUUID();
   await sql(

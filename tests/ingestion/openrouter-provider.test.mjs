@@ -287,6 +287,9 @@ test("OpenRouter sends bounded search and source-fetched structured extraction o
   assert.equal(search.tools[0].parameters.max_total_results, 15);
   assert.equal(search.tools[0].parameters.max_characters, 2000);
   assert.ok(search.tools[0].parameters.allowed_domains.includes("luma.com"));
+  assert.ok(
+    search.tools[0].parameters.allowed_domains.includes("productcircle.co"),
+  );
   assert.equal(search.tool_choice, "required");
   assert.equal(search.max_tokens, API_LIMITS.researchOutputTokens);
   const researchPayload = JSON.parse(search.messages[1].content);

@@ -52,6 +52,9 @@ const dns = async () => [{ address: "93.184.216.34", family: 4 }];
 const source = sourceIdentity(url);
 const finosUrl = "https://finos.org/hosted-events/audit-example";
 const finos = sourceIdentity(finosUrl);
+const productCircleUrl =
+  "https://productcircle.co/events/new-york-november-2026";
+const productCircle = sourceIdentity(productCircleUrl);
 const digest = (text) => createHash("sha256").update(text).digest("hex");
 const page = (text = report, sourceUrl = url) => ({
   evidence_kind: "source_page_text_v1",
@@ -338,6 +341,13 @@ test("capture retrieval preserves cited hosts and strips secrets without changin
     ),
     "https://www.pminyc.org/calendar?eventId=42",
   );
+  assert.equal(
+    sourceRetrievalUrl(
+      "https://www.productcircle.co/events/new-york-november-2026?token=PRIVATE&utm_source=x#fragment",
+      productCircle,
+    ),
+    "https://www.productcircle.co/events/new-york-november-2026",
+  );
   for (const input of [
     "http://finos.org/hosted-events/audit-example",
     "https://user:secret@finos.org/hosted-events/audit-example",
@@ -354,6 +364,43 @@ test("capture retrieval preserves cited hosts and strips secrets without changin
   assert.throws(() => sourceRetrievalUrl(querySource.source_url, querySource), {
     code: "source_capture_blocked_url",
   });
+});
+
+test("Product Circle redirects preserve one dated identity and reject another edition", async () => {
+  const captured = await captureSourcePage(
+    productCircle,
+    productCircleUrl,
+    signal,
+    {
+      now,
+      resolve: dns,
+      request: async (target) =>
+        target.hostname === "productcircle.co"
+          ? response("", 301, {
+              location:
+                "https://www.productcircle.co/events/new-york-november-2026?token=PRIVATE",
+            })
+          : response(report),
+    },
+  );
+  assert.equal(
+    captured.final_url,
+    "https://www.productcircle.co/events/new-york-november-2026",
+  );
+  assert.equal(captured.redirects, 1);
+  assert.deepEqual(validateCapturedPages([captured], [productCircle]), [
+    captured,
+  ]);
+  await assert.rejects(
+    captureSourcePage(productCircle, productCircleUrl, signal, {
+      resolve: dns,
+      request: async () =>
+        response("", 301, {
+          location: "https://productcircle.co/events/boston-november-2026",
+        }),
+    }),
+    { code: "source_capture_blocked_url" },
+  );
 });
 
 test("only public addresses can reach a pinned transport, including mixed DNS answers", async () => {

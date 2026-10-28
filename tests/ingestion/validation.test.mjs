@@ -274,6 +274,16 @@ test("canonicalizes listing URLs without merging meaningful query parameters", (
     sourceIdentity("https://eventbrite.com/e/founders-tickets-123").external_id,
     "123",
   );
+  assert.deepEqual(
+    sourceIdentity(
+      "https://www.productcircle.co/events/new-york-november-2026/?utm_source=test#details",
+    ),
+    {
+      source_name: "productcircle.co",
+      source_url: "https://productcircle.co/events/new-york-november-2026",
+      external_id: "new-york-november-2026",
+    },
+  );
 });
 
 test("rejects arbitrary hosts, credentials, non-HTTPS URLs and non-listing pages", () => {
@@ -290,6 +300,14 @@ test("rejects arbitrary hosts, credentials, non-HTTPS URLs and non-listing pages
     "https://luma.com/",
     "https://meetup.com/find",
     "https://eventbrite.com/d/ny--new-york/events/",
+    "https://productcircle.co/events",
+    "https://productcircle.co/events/nyc",
+    "https://productcircle.co/events/new-york-2026",
+    "https://productcircle.co/events/new-york-summer-2026",
+    "https://productcircle.co/events/New-York-November-2026",
+    "https://productcircle.co/events/new-york-november-26",
+    "https://productcircle.co/events/new-york-november-2026/extra",
+    "https://events.productcircle.co/events/new-york-november-2026",
   ])
     assert.equal(sourceIdentity(input), null, input);
 });
@@ -327,6 +345,16 @@ test("deduplicates source aliases, external IDs and tracking URLs before applyin
       ["https://meetup.com/old/events/12"],
     ).map((source) => source.external_id),
     ["13"],
+  );
+  assert.equal(
+    selectSources(
+      [
+        "https://www.productcircle.co/events/new-york-november-2026?utm_source=first",
+        "https://productcircle.co/events/new-york-november-2026",
+      ],
+      10,
+    ).length,
+    1,
   );
 });
 

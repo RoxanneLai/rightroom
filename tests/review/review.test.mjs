@@ -146,6 +146,10 @@ test("public URLs use a strict listing allowlist and never retain private parame
       "https://www.eventbrite.com/e/test-tickets-123?discount=secret",
       "https://eventbrite.com/e/test-tickets-123",
     ],
+    [
+      "https://www.productcircle.co/events/new-york-november-2026/?token=secret#fragment",
+      "https://productcircle.co/events/new-york-november-2026",
+    ],
   ])
     assert.equal(publicListingUrl(input), expected);
   for (const input of [
@@ -165,6 +169,11 @@ test("public URLs use a strict listing allowlist and never retain private parame
     "https://luma.com/test?x=\u001b[31m",
     "https://meetup.com/test",
     "https://eventbrite.com/e/test",
+    "https://productcircle.co/events",
+    "https://productcircle.co/events/new-york-2026",
+    "https://productcircle.co/events/new-york-summer-2026",
+    "https://productcircle.co/events/New-York-November-2026",
+    "https://productcircle.co/events/new-york-november-2026/extra",
     "https://luma.com/" + "a".repeat(2048),
   ])
     assert.equal(publicListingUrl(input), null, String(input));

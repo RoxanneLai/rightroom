@@ -19,5 +19,11 @@
     "prefix": "/event/eventdetails/",
     "identity_parameter": null,
     "identity_pattern": "W[0-9]{10}"
+  },
+  {
+    "host": "productcircle.co",
+    "prefix": "/events/",
+    "identity_parameter": null,
+    "identity_pattern": "[a-z]+(?:-[a-z]+)*-(?:january|february|march|april|may|june|july|august|september|october|november|december)-[0-9]{4}"
   }
 ]

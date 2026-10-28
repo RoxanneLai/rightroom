@@ -4,6 +4,12 @@ New live CLI runs, for both founder and career profiles, separate discovery from
 
 This addresses an evidence bottleneck, not a guarantee of better model output: previously a page could contain facts omitted from research, but local validation only retained the research report. The capture path has deterministic offline verification and successful small live career checkpoints. The [October 5 expansion](CAREER-EVENTS.md#current-live-checkpoint--october-5-2026) produced one new private draft from an unlinked lead with canonical extraction and no repair. Its ranking-evidence caveats reinforce that exact quote presence is not semantic truth. No historical run is retroactively declared successful, and these small pilots do not establish broad source coverage or consistent model quality.
 
+## Product Circle preflight — October 28, 2026
+
+An owner-run native preflight used the ordinary guarded capture path against Product Circle's dated New York listing. It returned HTTP 200 HTML with zero redirects, 167,157 response bytes and 9,025 normalized text characters; the bounded text included the required title, November 13, 2026 date and $579 price. It required no login, browser renderer, cookies, credentials or limit changes. That evidence authorized only the strict `productcircle.co/events/<city>-<month>-<year>` identity family. No paid discovery, extraction, database write, publication, registration or migration application occurred.
+
+The Codex executor itself could not reach the domain because of its network allowlist; the normal local Terminal result established page compatibility, not a relaxation of application safeguards. Synthetic tests retain same-identity redirect handling and changed-edition rejection. One readable page does not prove future availability or repeatable first-party discovery.
+
 ## Live capture checkpoint — October 1, 2026
 
 Run `1fea9bd8-b4b8-4784-89d0-f1a7243b7540` successfully captured FINOS (65,648 response bytes) and Meetup (110,247 response bytes), both HTTP 200 with zero redirects on their selected retrieval URLs. Tool-free extraction returned two canonical schema-valid, source-matched candidates without repair. One new private draft was written; a read-only backup comparison confirmed that the previously published FINOS event and approval history remained unchanged. No events were published.
