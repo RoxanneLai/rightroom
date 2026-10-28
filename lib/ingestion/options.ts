@@ -14,6 +14,7 @@ const optionsSchema = z
     searches: z.number().int().min(1).max(12).optional(),
     intent: z.enum(["refresh", "expand"]).optional(),
     search_focus: z.enum(["balanced", "product"]).optional(),
+    source_scope: z.enum(["all", "marketplace", "product_circle"]).optional(),
     career_target: careerTargetSchema.optional(),
   })
   .strict();
@@ -40,7 +41,8 @@ export function validateSearchOptions(value: unknown): SearchOptions {
     result.data.profile !== "career" &&
     ((result.data.searches ?? 3) > 3 ||
       result.data.career_target ||
-      result.data.search_focus !== undefined)
+      result.data.search_focus !== undefined ||
+      result.data.source_scope !== undefined)
   )
     throw new IngestionError("invalid_search_options");
   if (result.data.search_focus === "product" && (result.data.searches ?? 3) > 3)

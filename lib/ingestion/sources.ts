@@ -1,4 +1,4 @@
-import type { SourceIdentity } from "./contracts.ts";
+import type { SearchOptions, SourceIdentity } from "./contracts.ts";
 import { ORGANIZER_SOURCES, organizerListing } from "../source-registry.ts";
 
 export const ALLOWED_DOMAINS = [
@@ -8,7 +8,29 @@ export const ALLOWED_DOMAINS = [
   "eventbrite.com",
   ...ORGANIZER_SOURCES.map((source) => source.host),
 ];
+const MARKETPLACE_DOMAINS = [
+  "luma.com",
+  "lu.ma",
+  "meetup.com",
+  "eventbrite.com",
+] as const;
 export const MAX_RESEARCH_EXCLUSIONS = 50;
+
+export function allowedDomainsForScope(
+  scope: SearchOptions["source_scope"] = "all",
+): string[] {
+  if (scope === "marketplace") return [...MARKETPLACE_DOMAINS];
+  if (scope === "product_circle") return ["productcircle.co"];
+  return [...ALLOWED_DOMAINS];
+}
+
+export function sourceMatchesScope(
+  source: SourceIdentity,
+  scope: SearchOptions["source_scope"] = "all",
+): boolean {
+  if (scope === "all") return true;
+  return allowedDomainsForScope(scope).includes(source.source_name);
+}
 
 /** Normalize identity only; no HTTP requests are made to model-provided URLs. */
 export function sourceIdentity(value: string): SourceIdentity | null {
@@ -66,6 +88,7 @@ export function selectSources(
   urls: string[],
   limit: number,
   excludedUrls: string[] = [],
+  scope: SearchOptions["source_scope"] = "all",
 ): SourceIdentity[] {
   const selected = new Map<string, SourceIdentity>();
   const externalIds = new Set<string>();
@@ -82,7 +105,7 @@ export function selectSources(
   );
   for (const url of urls) {
     const source = sourceIdentity(url);
-    if (!source) continue;
+    if (!source || !sourceMatchesScope(source, scope)) continue;
     const id = source.external_id
       ? source.source_name + ":" + source.external_id
       : null;

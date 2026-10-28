@@ -17,6 +17,7 @@ import { careerSearchPlan, readCareerTarget } from "../lib/career/profile.ts";
 import { captureSourcePage } from "../lib/ingestion/source-capture.ts";
 import { SOURCE_CAPTURE_LIMITS } from "../lib/ingestion/source-page.ts";
 import { discoveryExclusionPlan } from "../lib/ingestion/exclusions.ts";
+import { allowedDomainsForScope } from "../lib/ingestion/sources.ts";
 import type {
   ReasoningEffort,
   RunSummary,
@@ -57,9 +58,13 @@ function printPlan(
           ...options,
           intent: options.intent ?? "refresh",
           ...(options.profile === "career"
-            ? { search_focus: options.search_focus ?? "balanced" }
+            ? {
+                search_focus: options.search_focus ?? "balanced",
+                source_scope: options.source_scope ?? "all",
+              }
             : {}),
         },
+        allowed_domains: allowedDomainsForScope(options.source_scope ?? "all"),
         discovery_exclusions: discoveryExclusionPlan(options),
         limits: {
           ...API_LIMITS,

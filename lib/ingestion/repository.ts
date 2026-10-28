@@ -120,7 +120,10 @@ export class SupabaseIngestionRepository implements IngestionRepository {
           ...options,
           intent: options.intent ?? "refresh",
           ...(options.profile === "career"
-            ? { search_focus: options.search_focus ?? "balanced" }
+            ? {
+                search_focus: options.search_focus ?? "balanced",
+                source_scope: options.source_scope ?? "all",
+              }
             : {}),
           model: this.model,
           effort: this.effort,
@@ -138,16 +141,18 @@ export class SupabaseIngestionRepository implements IngestionRepository {
   async listRecentCancelledSourceUrls(
     since: string,
     limit: number,
+    sourceNames?: string[],
   ): Promise<string[]> {
-    const { data, error } = await this.client
+    let query = this.client
       .from("event_sources")
       .select("source_url")
       .is("event_id", null)
       .eq("last_attempt_error", "source_page_cancelled")
       .gte("last_attempt_at", since)
       .order("last_attempt_at", { ascending: false })
-      .order("id", { ascending: true })
-      .limit(limit);
+      .order("id", { ascending: true });
+    if (sourceNames?.length) query = query.in("source_name", sourceNames);
+    const { data, error } = await query.limit(limit);
     if (error || data === null)
       throw new IngestionError("source_exclusion_read_failed");
     return data.map((row) => row.source_url);
@@ -157,15 +162,17 @@ export class SupabaseIngestionRepository implements IngestionRepository {
     from: string,
     to: string,
     limit: number,
+    sourceNames?: string[],
   ): Promise<string[]> {
-    const { data, error } = await this.client
+    let query = this.client
       .from("event_sources")
       .select("source_url,events!inner(starts_at,is_fixture)")
       .eq("events.is_fixture", false)
       .gte("events.starts_at", new Date(from).toISOString())
       .lt("events.starts_at", new Date(to).toISOString())
-      .order("id", { ascending: true })
-      .limit(limit);
+      .order("id", { ascending: true });
+    if (sourceNames?.length) query = query.in("source_name", sourceNames);
+    const { data, error } = await query.limit(limit);
     if (error || data === null)
       throw new IngestionError("linked_source_exclusion_read_failed");
     return data.map((row) => row.source_url);

@@ -29,9 +29,10 @@ import type {
   SourceIdentity,
 } from "./contracts.ts";
 import {
-  ALLOWED_DOMAINS,
+  allowedDomainsForScope,
   MAX_RESEARCH_EXCLUSIONS,
   selectSources,
+  sourceMatchesScope,
   sourceIdentity,
 } from "./sources.ts";
 import { IngestionError, errorCode } from "./errors.ts";
@@ -425,6 +426,7 @@ function canonicalNestedCandidate(
 function reportedSourceUrls(
   response: RouterResponse,
   selected: string[],
+  scope: SearchOptions["source_scope"],
 ): string[] {
   const message = response.choices[0].message;
   const annotated = new Set(
@@ -433,18 +435,20 @@ function reportedSourceUrls(
         (annotation) =>
           annotation.type === "url_citation" && annotation.url_citation,
       )
-      .map(
-        (annotation) =>
-          sourceIdentity(annotation.url_citation!.url)?.source_url,
+      .map((annotation) => sourceIdentity(annotation.url_citation!.url))
+      .filter(
+        (source): source is SourceIdentity =>
+          source !== null && sourceMatchesScope(source, scope),
       )
+      .map((source) => source.source_url)
       .filter((url): url is string => Boolean(url)),
   );
   const collect = (text: string): string[] => {
     const urls: string[] = [];
     for (const match of text.matchAll(/https:\/\/[^\s)\]}>'"]+/g)) {
-      const url = sourceIdentity(
-        match[0].replace(/[.,;:!?]+$/, ""),
-      )?.source_url;
+      const source = sourceIdentity(match[0].replace(/[.,;:!?]+$/, ""));
+      const url =
+        source && sourceMatchesScope(source, scope) ? source.source_url : null;
       if (url && annotated.has(url) && !urls.includes(url)) urls.push(url);
     }
     return urls;
@@ -1012,6 +1016,7 @@ export class OpenRouterSearchProvider implements DiscoveryProvider {
   private verifyResearchSearch(
     response: RouterResponse,
     budget = 3,
+    scope: SearchOptions["source_scope"] = "all",
   ): ProviderDiagnostic {
     const diagnostic = this.diagnostics.at(-1)!;
     const searches = response.usage?.server_tool_use?.web_search_requests;
@@ -1031,7 +1036,10 @@ export class OpenRouterSearchProvider implements DiscoveryProvider {
     if (citations.length > budget * API_LIMITS.searchResultsPerCall)
       throw new IngestionError("search_result_limit_exceeded");
     if (
-      !citations.some((citation) => sourceIdentity(citation.url_citation!.url))
+      !citations.some((citation) => {
+        const source = sourceIdentity(citation.url_citation!.url);
+        return source !== null && sourceMatchesScope(source, scope);
+      })
     )
       throw new IngestionError("invalid_search_citation");
     diagnostic.search_verification = "bounded_citations";
@@ -1177,9 +1185,13 @@ export class OpenRouterSearchProvider implements DiscoveryProvider {
     if (options.profile === "career" && !options.career_target)
       throw new IngestionError("invalid_career_config");
     this.searchBudget = options.searches ?? 3;
+    const sourceScope = options.source_scope ?? "all";
+    const allowedDomains = allowedDomainsForScope(sourceScope);
     const safeExcludedSourceUrls = selectSources(
       excludedSourceUrls,
       API_LIMITS.researchExcludedSources,
+      [],
+      sourceScope,
     ).map((source) => source.source_url);
     const response = await this.request(
       "research",
@@ -1208,7 +1220,7 @@ export class OpenRouterSearchProvider implements DiscoveryProvider {
               max_total_results:
                 this.searchBudget * API_LIMITS.searchResultsPerCall,
               max_characters: API_LIMITS.searchResultCharacters,
-              allowed_domains: ALLOWED_DOMAINS,
+              allowed_domains: allowedDomains,
             },
           },
         ],
@@ -1222,9 +1234,13 @@ export class OpenRouterSearchProvider implements DiscoveryProvider {
     const report = message.content;
     if (!report?.trim() || report.length > API_LIMITS.reportCharacters)
       throw new IngestionError("invalid_research_report");
-    const diagnostic = this.verifyResearchSearch(response, this.searchBudget);
+    const diagnostic = this.verifyResearchSearch(
+      response,
+      this.searchBudget,
+      sourceScope,
+    );
     const selection = researchSelection(report, options.limit);
-    const urls = reportedSourceUrls(response, selection.urls);
+    const urls = reportedSourceUrls(response, selection.urls, sourceScope);
     const retrievalUrls: Record<string, string> = {};
     for (const match of report.matchAll(/https:\/\/[^\s)\]}>'"]+/g)) {
       const raw = match[0].replace(/[.,;:!?]+$/, "");
@@ -1257,6 +1273,7 @@ export class OpenRouterSearchProvider implements DiscoveryProvider {
         ...(options.profile === "career"
           ? { search_focus: options.search_focus ?? "balanced" }
           : {}),
+        ...(options.profile === "career" ? { source_scope: sourceScope } : {}),
         planned_queries:
           options.profile === "career" ? careerSearchPlan(options) : [],
         executed_queries: null,
@@ -1277,6 +1294,9 @@ export class OpenRouterSearchProvider implements DiscoveryProvider {
     if (options.profile === "career" && !options.career_target)
       throw new IngestionError("invalid_career_config");
     this.searchBudget = options.searches ?? 3;
+    const allowedDomains = allowedDomainsForScope(
+      options.source_scope ?? "all",
+    );
     const captured = research.source_pages !== undefined;
     if (captured)
       research = {
@@ -1318,7 +1338,7 @@ export class OpenRouterSearchProvider implements DiscoveryProvider {
                     engine: "openrouter",
                     max_uses: sources.length,
                     max_content_tokens: API_LIMITS.fetchContentTokens,
-                    allowed_domains: ALLOWED_DOMAINS,
+                    allowed_domains: allowedDomains,
                   },
                 },
               ],

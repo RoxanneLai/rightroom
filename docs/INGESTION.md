@@ -98,6 +98,12 @@ The pre-research exclusion queries are not a transaction-wide snapshot of concur
 
 The approved October 5 pilot supplied five untruncated exclusions (one cancelled lead, four linked sources), captured one previously unlinked source, and wrote one new private draft. Read-only backup comparison confirmed the exclusion set and unchanged prior events/publication history. Its valid manifest retained a `needs_verification` lead whose captured page supplied the missing facts. It made two model requests, no repair and no retry, with $0.02659782 provider-reported cost (unverified). This is a successful one-lead compatibility check, not evidence that expansion finds three distinct new events or reliably improves discovery diversity. Human review identified weak role-fit/networking quote semantics and host approval on a linked registration page; those limitations remain separate from schema validity. See the [current career checkpoint](CAREER-EVENTS.md#current-live-checkpoint--october-5-2026).
 
+### Source-isolated comparison arms
+
+Career discovery also accepts `--source-scope marketplace` or `--source-scope product-circle`; the default remains `all`. Marketplace scope permits only individual Luma, Meetup and Eventbrite listings. Product Circle scope permits only its strict dated event family. The scope constrains hosted-search domains, model instructions, cited-source acceptance, historical exclusion queries and final local source selection. It is career-only and does not change scoring, eligibility, capture bounds, review or publication.
+
+The scope exists to support the controlled [marketplace-versus-Product-Circle comparison](DISCOVERY-COMPARISON.md). It is not an automatic fallback or retry: a zero-result arm ends normally, and an out-of-scope source cannot fill a slot. The free comparison planner never enables live mode; each paid arm still requires separate current authorization and the ordinary ingestion safeguards.
+
 ## Select the backend model and effort
 
 The checked-in default is in `config/ingestion.json`:

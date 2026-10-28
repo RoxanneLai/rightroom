@@ -87,6 +87,7 @@ export function researchInput(
           profile: "career",
           target: options.career_target,
           search_focus: options.search_focus ?? "balanced",
+          source_scope: options.source_scope ?? "all",
           search_budget: options.searches ?? 3,
           planned_queries: careerSearchPlan(options),
         }

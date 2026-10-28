@@ -408,6 +408,7 @@ async function collectAndPersist(
     research.urls,
     context.options.limit,
     excludedSourceUrls,
+    context.options.source_scope,
   );
   context.summary.sources_discovered = sources.length;
   Object.assign(context.metadata, {
@@ -462,7 +463,10 @@ export async function runIngestion(
       profile: options.profile ?? "founder",
       intent: options.intent ?? "refresh",
       ...(options.profile === "career"
-        ? { search_focus: options.search_focus ?? "balanced" }
+        ? {
+            search_focus: options.search_focus ?? "balanced",
+            source_scope: options.source_scope ?? "all",
+          }
         : {}),
       profile_version: options.career_target?.version ?? "founder-v1",
       planned_queries:

@@ -1,10 +1,10 @@
-# Milestone 1 readiness audit — October 14, 2026
+# Milestone 1 readiness audit — October 14, updated October 28, 2026
 
 ## Verdict
 
 Milestone 1 is in evidence-building, not complete. The project has a functioning ingestion path, current offline compatibility evidence and a fresh seven-event PM comparison set. It does not yet have the repeated, accessible lead yield required by the PRD exit gate, and the hard paid-discovery budget policy remains unresolved.
 
-The next product step is the prepared human review of the seven-event cohort. The next autonomous engineering experiment, after separate approval, should compare one fixed-window first-party-organizer search with the marketplace baseline. Another broad parser, model or adapter change is not supported by the current evidence.
+The seven-event cohort review and Product Circle native-capture preflight are now complete. The next experiment is prepared, not executed: a credential-free harness creates two source-isolated, same-window plans and evaluates a separately approved completed pair read-only. No comparison result exists yet, so repeatable discovery remains unproven. See [controlled discovery comparison](DISCOVERY-COMPARISON.md).
 
 ## Audit boundary
 
@@ -70,21 +70,21 @@ This is reassuring but bounded. Only one replay case contains the exact original
 | [PaymentsFn 2026](https://paymentsfn.com/)                                                  | Active; November 18; no fee                                                  | `Yes`             | Limited seats; five days outside default horizon            | Not registered             |
 | [Genesys Xperience on Tour](https://www.genesys.com/events/xperience-on-tour-new-york)      | Active; November 17; complimentary for qualifying attendees                  | `Yes` if eligible | CX-leader/vendor context; four days outside default horizon | Not registered             |
 | [Experience Research Summit](https://sprig.com/summit/nyc)                                  | Active; November 4; no public price                                          | `Unclassified`    | Application-only, 50 seats, VP/Director/Head audience       | Not registered             |
-| [Product Circle Leaders Circle](https://www.productcircle.co/events/new-york-november-2026) | Active; November 13; $579 excluding VAT                                      | `No`              | Application-based; senior product leaders                   | Not registered             |
+| [Product Circle Leaders Circle](https://www.productcircle.co/events/new-york-november-2026) | Active; November 13; $579 excluding VAT                                      | `No`              | Application-based; senior product leaders                   | Accepted dated identity    |
 | [monday.com Elevate NYC](https://monday.com/elevate/)                                       | Active; October 28–29; official page shows a current $1,200 last-chance tier | `No`              | Broad vendor conference rather than PM-specific             | Not registered             |
 
 No cancellation or stale organizer page was found in this cohort. Freshness is not the same as suitability: Product Circle and Elevate fail the provisional price policy, Sprig has a likely role-access mismatch, and the first four still require a human attendance judgment.
 
-Only the two Luma URLs pass the current automated source-identity boundary. The five organizer-domain candidates broaden the research evidence but cannot enter ingestion today. The [first-party source-readiness spike](FIRST-PARTY-SOURCE-READINESS.md) found that Product Circle has the only sufficiently durable individual-event identity pattern, but its native capture remains unverified because the current execution environment blocks the domain before HTTP. No new domain was enabled. This is a concrete source-coverage gap; it is not a reason to allowlist all five domains at once.
+At the October 14 audit, only the two Luma URLs passed the automated source-identity boundary. The [first-party source-readiness follow-up](FIRST-PARTY-SOURCE-READINESS.md) has since enabled only Product Circle's strict dated family after an owner-run native preflight passed; the other four organizer candidates remain unsupported. This narrows the source-coverage gap without proving Product Circle discovery yield or justifying a broad organizer allowlist.
 
 ## Recommended sequence
 
-1. Run the prepared unanchored human review of the seven candidates. Record `Yes`, `Maybe` or `No`, one main reason and an overall order before showing generated scores.
+1. Preserve the completed unanchored seven-candidate review and its provisional price bands as human product evidence, not training labels or automatic publication decisions.
 2. Keep the existing scoring and parser behavior unchanged unless that review or a new captured failure exposes a narrow, repeatable mismatch.
 3. Resolve the paid-discovery spending policy before another paid acceptance attempt. The provisional attendance price bands do not answer the product's API-spending question.
-4. Complete the single Product Circle native-capture preflight described in the source-readiness spike. Enable only that dated event family if it passes without new capture privileges or relaxed limits.
+4. Keep Product Circle limited to the enabled dated family and fail closed if future pages do not meet the ordinary capture safeguards.
 5. Preserve and replay the next bounded Luma failure before expanding Luma volume or changing its adapter.
-6. After a safe first-party source exists, run one no-publication, fixed-window marketplace-versus-first-party comparison. Measure verified relevant leads, capture success and operator effort.
+6. Use the prepared harness for one no-publication, fixed-window marketplace-versus-Product-Circle comparison. Authorize each paid arm separately, then measure aggregate yield, capture success, usable draft writes, complete provider-reported cost and supplied operator review time.
 7. Require at least three separately authorized discovery evaluations to meet the PRD's proposed yield and factual-quality gates before declaring Milestone 1 complete.
 
 ## What should not happen next

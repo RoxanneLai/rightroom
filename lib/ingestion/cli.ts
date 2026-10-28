@@ -13,8 +13,10 @@ export const INGEST_HELP = [
   "                 [--profile founder|career] [--searches 1..12] [--career-config path]",
   "                 [--intent refresh|expand]",
   "                 [--search-focus balanced|product]",
+  "                 [--source-scope all|marketplace|product-circle]",
   "Career only: balanced (default) interleaves families; product uses only the three existing PM query families (1..3 searches).",
   "Search focus changes research plans, not eligibility, scoring, or publication rules. Planned queries are not verified execution.",
+  "Career source scope defaults to all. Marketplace limits discovery to Luma, Meetup, and Eventbrite; product-circle limits it to strict dated Product Circle listings.",
   "Default intent: refresh. Expand excludes up to 50 known/cancelled source identities, prioritizing cancelled sources.",
   "Expand targets new drafts in the chosen window; failed unlinked leads remain eligible. No extra searches or retries.",
   "Default profile: career, with a 30-day window. Use --profile founder for the legacy 14-day startup search.",
@@ -57,6 +59,7 @@ export function parseIngestionArgs(args: string[], now = new Date()) {
         searches: { type: "string" },
         intent: { type: "string" },
         "search-focus": { type: "string" },
+        "source-scope": { type: "string" },
         "career-config": { type: "string" },
         live: { type: "boolean" },
         help: { type: "boolean", short: "h" },
@@ -82,6 +85,14 @@ export function parseIngestionArgs(args: string[], now = new Date()) {
     values["search-focus"] !== undefined &&
     (profile !== "career" ||
       !["balanced", "product"].includes(values["search-focus"]))
+  )
+    throw new IngestionError("invalid_cli_arguments");
+  if (
+    values["source-scope"] !== undefined &&
+    (profile !== "career" ||
+      !["all", "marketplace", "product-circle"].includes(
+        values["source-scope"],
+      ))
   )
     throw new IngestionError("invalid_cli_arguments");
   if (
@@ -134,6 +145,12 @@ export function parseIngestionArgs(args: string[], now = new Date()) {
     ...(values.intent ? { intent: values.intent } : {}),
     ...(values["search-focus"]
       ? { search_focus: values["search-focus"] as "balanced" | "product" }
+      : {}),
+    ...(values["source-scope"]
+      ? {
+          source_scope: values["source-scope"].replace("-", "_") as
+            "all" | "marketplace" | "product_circle",
+        }
       : {}),
     ...(values.searches ? { searches: Number(values.searches) } : {}),
   });

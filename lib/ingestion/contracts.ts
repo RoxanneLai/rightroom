@@ -158,6 +158,7 @@ export type SearchOptions = {
   searches?: number;
   intent?: "refresh" | "expand";
   search_focus?: "balanced" | "product";
+  source_scope?: "all" | "marketplace" | "product_circle";
   career_target?: import("../career/profile.ts").CareerTarget;
 };
 
@@ -325,11 +326,13 @@ export interface IngestionRepository {
   listRecentCancelledSourceUrls(
     since: string,
     limit: number,
+    sourceNames?: string[],
   ): Promise<string[]>;
   listLinkedSourceUrls(
     from: string,
     to: string,
     limit: number,
+    sourceNames?: string[],
   ): Promise<string[]>;
   checkpoint(runId: string, metadata: Json): Promise<void>;
   save(

@@ -1,7 +1,11 @@
 import "server-only";
 import { z } from "zod";
 import type { IngestionRepository, SearchOptions } from "./contracts.ts";
-import { MAX_RESEARCH_EXCLUSIONS, selectSources } from "./sources.ts";
+import {
+  allowedDomainsForScope,
+  MAX_RESEARCH_EXCLUSIONS,
+  selectSources,
+} from "./sources.ts";
 
 const CANCELLED_SOURCE_EXCLUSION_DAYS = 90;
 const DAY_MS = 86400000;
@@ -68,22 +72,33 @@ export async function collectDiscoveryExclusions(
     now.getTime() - CANCELLED_SOURCE_EXCLUSION_DAYS * DAY_MS,
   ).toISOString();
   const probeLimit = MAX_RESEARCH_EXCLUSIONS + 1;
+  const sourceNames = allowedDomainsForScope(options.source_scope ?? "all");
   const cancelledRows = await repository.listRecentCancelledSourceUrls(
     since,
     probeLimit,
+    sourceNames,
   );
-  const cancelled = selectSources(cancelledRows, MAX_RESEARCH_EXCLUSIONS).map(
-    (source) => source.source_url,
-  );
+  const cancelled = selectSources(
+    cancelledRows,
+    MAX_RESEARCH_EXCLUSIONS,
+    [],
+    options.source_scope,
+  ).map((source) => source.source_url);
   const linkedRows =
     options.intent === "expand"
       ? await repository.listLinkedSourceUrls(
           options.from,
           options.to,
           probeLimit,
+          sourceNames,
         )
       : [];
-  const linked = selectSources(linkedRows, probeLimit, cancelled);
+  const linked = selectSources(
+    linkedRows,
+    probeLimit,
+    cancelled,
+    options.source_scope,
+  );
   const remaining = MAX_RESEARCH_EXCLUSIONS - cancelled.length;
   const selectedLinked = linked
     .slice(0, remaining)

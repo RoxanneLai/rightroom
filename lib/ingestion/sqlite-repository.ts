@@ -350,7 +350,10 @@ export class SqliteIngestionRepository implements IngestionRepository {
             ...options,
             intent: options.intent ?? "refresh",
             ...(options.profile === "career"
-              ? { search_focus: options.search_focus ?? "balanced" }
+              ? {
+                  search_focus: options.search_focus ?? "balanced",
+                  source_scope: options.source_scope ?? "all",
+                }
               : {}),
             model: this.model,
             effort: this.effort,
@@ -368,39 +371,51 @@ export class SqliteIngestionRepository implements IngestionRepository {
   async listRecentCancelledSourceUrls(
     since: string,
     limit: number,
+    sourceNames?: string[],
   ): Promise<string[]> {
-    return this.use((database) =>
-      (
+    return this.use((database) => {
+      const sourceFilter = sourceNames?.length
+        ? ` and source_name in (${sourceNames.map(() => "?").join(",")})`
+        : "";
+      return (
         database
           .prepare(
             `select source_url from event_sources where event_id is null
              and last_attempt_error = 'source_page_cancelled' and last_attempt_at >= ?
-             order by last_attempt_at desc, id asc limit ?`,
+             ${sourceFilter} order by last_attempt_at desc, id asc limit ?`,
           )
-          .all(since, limit) as Array<{ source_url: string }>
-      ).map((row) => row.source_url),
-    );
+          .all(since, ...(sourceNames ?? []), limit) as Array<{
+          source_url: string;
+        }>
+      ).map((row) => row.source_url);
+    });
   }
 
   async listLinkedSourceUrls(
     from: string,
     to: string,
     limit: number,
+    sourceNames?: string[],
   ): Promise<string[]> {
     try {
       const database = new DatabaseSync(this.path, { readOnly: true });
       try {
         database.exec("pragma busy_timeout = 5000");
+        const sourceFilter = sourceNames?.length
+          ? ` and s.source_name in (${sourceNames.map(() => "?").join(",")})`
+          : "";
         return (
           database
             .prepare(
               `select s.source_url from event_sources s join events e on s.event_id = e.id
            where e.is_fixture = 0 and julianday(e.starts_at) >= julianday(?)
-           and julianday(e.starts_at) < julianday(?) order by s.id asc limit ?`,
+           and julianday(e.starts_at) < julianday(?) ${sourceFilter}
+           order by s.id asc limit ?`,
             )
             .all(
               new Date(from).toISOString(),
               new Date(to).toISOString(),
+              ...(sourceNames ?? []),
               limit,
             ) as Array<{ source_url: string }>
         ).map((row) => row.source_url);
