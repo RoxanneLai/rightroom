@@ -23,7 +23,7 @@ type PlanOptions = {
   limit: number;
 };
 
-type EvaluationOptions = {
+export type EvaluationOptions = {
   command: "evaluate";
   marketplaceRun: string;
   productCircleRun: string;

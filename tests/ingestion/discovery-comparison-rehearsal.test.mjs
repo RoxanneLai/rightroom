@@ -1,11 +1,12 @@
 import assert from "node:assert/strict";
 import dns from "node:dns/promises";
-import { readFile, stat } from "node:fs/promises";
+import { readFile, stat, writeFile } from "node:fs/promises";
 import https from "node:https";
 import { dirname, relative, resolve } from "node:path";
 import { syncBuiltinESMExports } from "node:module";
 import test, { after, before, mock } from "node:test";
 import { runComparisonCli } from "../../lib/ingestion/discovery-comparison.ts";
+import { runComparisonReviewCli } from "../../lib/ingestion/discovery-comparison-review.ts";
 import {
   clock,
   databasePath,
@@ -128,5 +129,118 @@ test("real scoped ingestion runs feed the read-only comparison evaluator offline
   assert.doesNotMatch(
     report,
     /PRIVATE_ACCEPTANCE_EVIDENCE|https:\/\/|raw_payload|research_report/,
+  );
+
+  const packetPath = resolve(directory, "review-packet.json");
+  const prepared = await runComparisonReviewCli(
+    [
+      "prepare",
+      "--marketplace-run",
+      marketplaceResult.summary.run_id,
+      "--product-circle-run",
+      productCircleResult.summary.run_id,
+      "--output",
+      relative(process.cwd(), packetPath),
+    ],
+    { DATABASE_BACKEND: "sqlite", SQLITE_DATABASE_PATH: path },
+  );
+  assert.equal(prepared.mode, "offline_discovery_comparison_review_prepare");
+  const packet = JSON.parse(await readFile(packetPath, "utf8"));
+  assert.equal((await stat(packetPath)).mode & 0o777, 0o600);
+  assert.equal(packet.items.length, 2);
+  assert.doesNotMatch(
+    JSON.stringify(packet),
+    /PRIVATE_ACCEPTANCE_EVIDENCE|raw_payload|research_report|content_text/,
+  );
+  const incompleteOutput = resolve(directory, "incomplete-results.json");
+  await assert.rejects(
+    runComparisonReviewCli(
+      [
+        "evaluate",
+        "--input",
+        relative(process.cwd(), packetPath),
+        "--output",
+        relative(process.cwd(), incompleteOutput),
+      ],
+      { DATABASE_BACKEND: "sqlite", SQLITE_DATABASE_PATH: path },
+    ),
+    /comparison_review_incomplete/,
+  );
+  const tampered = structuredClone(packet);
+  tampered.items[0].event.title = "Tampered title";
+  const tamperedPath = resolve(directory, "tampered-packet.json");
+  await writeFile(tamperedPath, JSON.stringify(tampered, null, 2) + "\n", {
+    mode: 0o600,
+  });
+  await assert.rejects(
+    runComparisonReviewCli(
+      [
+        "evaluate",
+        "--input",
+        relative(process.cwd(), tamperedPath),
+        "--output",
+        relative(process.cwd(), incompleteOutput),
+      ],
+      { DATABASE_BACKEND: "sqlite", SQLITE_DATABASE_PATH: path },
+    ),
+    /comparison_review_packet_stale/,
+  );
+  for (const judgment of packet.judgments) {
+    const marketplaceItem =
+      packet.items.find((item) => item.item_id === judgment.item_id).arm ===
+      "marketplace";
+    judgment.relevance = "yes";
+    judgment.access = "yes";
+    judgment.price_fit = marketplaceItem ? "yes" : "no";
+    judgment.evidence_quality = "sufficient";
+    judgment.facts = {
+      title: "agree",
+      schedule: "agree",
+      location: "agree",
+      registration_identity: "agree",
+    };
+    judgment.disposition = marketplaceItem ? "usable" : "reject";
+    judgment.rejection_reason = marketplaceItem ? null : "price";
+    judgment.review_minutes = marketplaceItem ? 5 : 7;
+  }
+  packet.misses.push({
+    arm: "marketplace",
+    category: "known_event_missed",
+    note: "Synthetic miss note retained only in the private packet.",
+  });
+  await writeFile(packetPath, JSON.stringify(packet, null, 2) + "\n", {
+    mode: 0o600,
+  });
+  const reviewResultPath = resolve(directory, "review-results.json");
+  const reviewDatabaseBefore = await readFile(path);
+  const reviewed = await runComparisonReviewCli(
+    [
+      "evaluate",
+      "--input",
+      relative(process.cwd(), packetPath),
+      "--output",
+      relative(process.cwd(), reviewResultPath),
+    ],
+    { DATABASE_BACKEND: "sqlite", SQLITE_DATABASE_PATH: path },
+  );
+  assert.equal(reviewed.mode, "offline_discovery_comparison_review");
+  assert.equal(reviewed.arms.marketplace.unique_verified_usable_leads, 1);
+  assert.equal(reviewed.arms.marketplace.review_minutes, 5);
+  assert.deepEqual(reviewed.arms.marketplace.miss_categories, {
+    known_event_missed: 1,
+  });
+  assert.equal(reviewed.arms.product_circle.unique_verified_usable_leads, 0);
+  assert.equal(reviewed.arms.product_circle.rejection_reasons.price, 1);
+  assert.equal(reviewed.arms.product_circle.review_minutes, 7);
+  assert.equal(
+    reviewed.proposed_yield_observation.marketplace_meets_count,
+    false,
+  );
+  assert.deepEqual(await readFile(path), reviewDatabaseBefore);
+  const reviewResult = await readFile(reviewResultPath, "utf8");
+  assert.equal((await stat(reviewResultPath)).mode & 0o777, 0o600);
+  assert.doesNotMatch(
+    reviewResult,
+    /comparison-marketplace|new-york-september|Synthetic miss|https:\/\//,
   );
 });

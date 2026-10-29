@@ -9,6 +9,11 @@ import {
   parseComparisonOptions,
   runComparisonCli,
 } from "../../lib/ingestion/discovery-comparison.ts";
+import {
+  parseComparisonReviewOptions,
+  prepareComparisonReview,
+  safeComparisonReviewError,
+} from "../../lib/ingestion/discovery-comparison-review.ts";
 import { parseIngestionArgs } from "../../lib/ingestion/cli.ts";
 import { collectDiscoveryExclusions } from "../../lib/ingestion/exclusions.ts";
 import { OpenRouterSearchProvider } from "../../lib/ingestion/openrouter-provider.ts";
@@ -186,6 +191,49 @@ test("comparison arguments reject duplicates, unsafe outputs, and unmatched run 
     assert.throws(() => parseComparisonOptions(args, now));
 });
 
+test("comparison review arguments are strict and keep every artifact under codex-tmp", () => {
+  assert.equal(parseComparisonReviewOptions([]).command, "help");
+  assert.equal(
+    parseComparisonReviewOptions([
+      "prepare",
+      "--marketplace-run",
+      marketplaceRun,
+      "--product-circle-run",
+      productCircleRun,
+    ]).command,
+    "prepare",
+  );
+  for (const args of [
+    ["prepare", "--marketplace-run", marketplaceRun],
+    [
+      "prepare",
+      "--marketplace-run",
+      marketplaceRun,
+      "--marketplace-run",
+      marketplaceRun,
+      "--product-circle-run",
+      productCircleRun,
+    ],
+    ["evaluate", "--input", "outside.json"],
+    ["evaluate", "--input", "codex-tmp/input.json", "--output", "../x.json"],
+    ["unknown"],
+  ])
+    assert.throws(() => parseComparisonReviewOptions(args));
+});
+
+test("comparison review CLI errors never echo private validator input", () => {
+  assert.equal(
+    safeComparisonReviewError(new Error("comparison_review_incomplete")),
+    "comparison_review_incomplete",
+  );
+  assert.equal(
+    safeComparisonReviewError(
+      new Error('Invalid value: "https://private.example/event"'),
+    ),
+    "comparison_review_failed",
+  );
+});
+
 test("source scope constrains CLI, exclusions, final selection, and hosted-search domains", async () => {
   assert.equal(
     parseIngestionArgs(["--source-scope", "product-circle"], now).options
@@ -342,6 +390,42 @@ test("evaluation reads one matched pair, reports safe aggregates, and writes own
   const saved = await readFile(savedPath, "utf8");
   assert.equal((await stat(savedPath)).mode & 0o777, 0o600);
   assert.doesNotMatch(saved, /PRIVATE|https:\/\//);
+});
+
+test("comparison review accepts a completed pair with no discovered sources", async () => {
+  const directory = await temporaryDirectory();
+  const databasePath = join(directory, "zero-source-comparison.sqlite");
+  const database = openSqliteDatabase(databasePath);
+  const zeroSummary = {
+    sources_discovered: 0,
+    sources_created: 0,
+    events_written: 0,
+    sources_unlinked: 0,
+    provider_diagnostics: [],
+    source_capture_diagnostics: [],
+  };
+  seedRun(database, marketplaceRun, "marketplace", { summary: zeroSummary });
+  seedRun(database, productCircleRun, "product_circle", {
+    summary: zeroSummary,
+  });
+  for (const runId of [marketplaceRun, productCircleRun]) {
+    const row = database
+      .prepare("select metadata from search_runs where id = ?")
+      .get(runId);
+    const metadata = JSON.parse(row.metadata);
+    delete metadata.consulted_urls;
+    database
+      .prepare("update search_runs set metadata = ? where id = ?")
+      .run(JSON.stringify(metadata), runId);
+  }
+  database.close();
+  const packet = prepareComparisonReview(
+    databasePath,
+    marketplaceRun,
+    productCircleRun,
+  );
+  assert.deepEqual(packet.items, []);
+  assert.deepEqual(packet.judgments, []);
 });
 
 test("evaluation rejects mismatched scopes, windows, and nonterminal runs", async () => {

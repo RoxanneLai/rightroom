@@ -27,6 +27,7 @@
     "ingest:evaluate": "node --conditions=react-server --experimental-strip-types scripts/evaluate-ingestion.ts",
     "ingest:compare": "node --conditions=react-server --experimental-strip-types scripts/compare-discovery.ts",
     "ingest:compare:rehearse": "node --conditions=react-server --experimental-strip-types --test tests/ingestion/discovery-comparison-rehearsal.test.mjs",
+    "ingest:compare:review": "node --conditions=react-server --experimental-strip-types scripts/review-discovery-comparison.ts",
     "ingest:replay": "node --conditions=react-server --experimental-strip-types scripts/replay-captures.ts",
     "ingest:inspect": "node --conditions=react-server --experimental-strip-types scripts/inspect-ingestion.ts",
     "ingest:recover": "node --conditions=react-server --experimental-strip-types scripts/recover-ingestion.ts",

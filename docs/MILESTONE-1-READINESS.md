@@ -4,7 +4,7 @@
 
 Milestone 1 is in evidence-building, not complete. The project has a functioning ingestion path, current offline compatibility evidence and a fresh seven-event PM comparison set. It does not yet have the repeated, accessible lead yield required by the PRD exit gate, and the hard paid-discovery budget policy remains unresolved.
 
-The seven-event cohort review and Product Circle native-capture preflight are now complete. The next experiment is prepared, not executed: a credential-free harness creates two source-isolated, same-window plans and evaluates a separately approved completed pair read-only. No comparison result exists yet, so repeatable discovery remains unproven. See [controlled discovery comparison](DISCOVERY-COMPARISON.md).
+The seven-event cohort review and Product Circle native-capture preflight are now complete. The next experiment is prepared, not executed: a credential-free harness creates two source-isolated, same-window plans, rehearses their real ingestion paths and generates a private human-review packet plus aggregate decision report for a separately approved completed pair. No comparison result exists yet, so repeatable discovery remains unproven. See [controlled discovery comparison](DISCOVERY-COMPARISON.md).
 
 ## Audit boundary
 
@@ -84,7 +84,7 @@ At the October 14 audit, only the two Luma URLs passed the automated source-iden
 3. Resolve the paid-discovery spending policy before another paid acceptance attempt. The provisional attendance price bands do not answer the product's API-spending question.
 4. Keep Product Circle limited to the enabled dated family and fail closed if future pages do not meet the ordinary capture safeguards.
 5. Preserve and replay the next bounded Luma failure before expanding Luma volume or changing its adapter.
-6. Use the prepared harness for one no-publication, fixed-window marketplace-versus-Product-Circle comparison. Authorize each paid arm separately, then measure aggregate yield, capture success, usable draft writes, complete provider-reported cost and supplied operator review time.
+6. Use the prepared harness for one no-publication, fixed-window marketplace-versus-Product-Circle comparison. Authorize each paid arm separately, then complete the private fixed-rubric review and measure unique usable yield, factual conflicts, rejection reasons, misses, operator effort, capture success, draft writes and complete provider-reported cost.
 7. Require at least three separately authorized discovery evaluations to meet the PRD's proposed yield and factual-quality gates before declaring Milestone 1 complete.
 
 ## What should not happen next

@@ -60,11 +60,52 @@ During collection:
 
 After collection:
 
-1. Inspect both runs and review their private drafts with the same relevance, access, price and evidence rubric.
-2. Record actual review minutes separately for each arm.
-3. Run the read-only evaluator with both UUIDs and review-time values.
-4. Preserve the aggregate report and a short miss analysis; keep private source evidence out of shared artifacts.
-5. Treat the pair as one learning observation, not proof of repeatability or permission for another paid run.
+1. Generate the private review packet from the two run UUIDs.
+2. Review every item with the fixed relevance, access, price, factual-agreement and evidence-quality rubric; record actual review minutes and known misses.
+3. Validate and aggregate the completed packet.
+4. Optionally run the lower-level read-only evaluator for ingestion-funnel and provider-cost diagnostics.
+5. Preserve the aggregate reports and keep the private packet out of shared artifacts.
+6. Treat the pair as one learning observation, not proof of repeatability or permission for another paid run.
+
+## Private operator review
+
+Create an owner-only review packet after both arms finish:
+
+```bash
+DATABASE_BACKEND=sqlite SQLITE_DATABASE_PATH=data/founder-radar.sqlite \
+  npm run ingest:compare:review -- prepare \
+  --marketplace-run MARKETPLACE_RUN_UUID \
+  --product-circle-run PRODUCT_CIRCLE_RUN_UUID
+```
+
+The default output is `codex-tmp/discovery-comparison-review.json`. It includes only the bounded fields needed for a human decision: source identity, title, schedule, location, format, price, registration state, career score and cautions. It never includes captured page text, raw provider payloads, research reports, prompts or model responses. The file is private, ignored by Git and written with owner-only permissions; do not publish or commit it.
+
+For each item, fill every entry in its matching `judgments` object:
+
+- `relevance`: `yes`, `maybe` or `no`;
+- `access`: `yes`, `maybe`, `no` or `unknown`;
+- `price_fit`: for known USD totals, `yes` at $0–$150 inclusive, `maybe` above $150 through $250 inclusive and `no` above $250; use `unknown` for missing or non-USD prices;
+- `evidence_quality`: `sufficient`, `limited`, `conflicting` or `unavailable`;
+- each factual verdict: `agree`, `conflict` or `unknown`;
+- `disposition`: `usable`, `reject` or `follow_up`;
+- `rejection_reason`: required only for `reject`, using one of the packet's fixed values;
+- `duplicate_group`: the same short lowercase label for copies of the same event, otherwise `null`;
+- `review_minutes`: whole minutes from 0 through 1440; and
+- `notes`: optional private context, or `null`.
+
+Add any known discovery misses to `misses` using the fixed `arm` and `category` values listed in the packet's rubric. Miss notes remain private. Do not edit `items`, `comparison`, `rubric`, `version` or `packet_hash`; the evaluator rejects stale or tampered evidence.
+
+Validate and aggregate the completed packet:
+
+```bash
+DATABASE_BACKEND=sqlite SQLITE_DATABASE_PATH=data/founder-radar.sqlite \
+  npm run ingest:compare:review -- evaluate \
+  --input codex-tmp/discovery-comparison-review.json
+```
+
+The default result is `codex-tmp/discovery-comparison-review-results.json`. It contains aggregate counts only: operator and conservatively verified usable items, unique usable leads, factual conflicts, rejection reasons, follow-ups, miss categories and review time by arm. A verified usable lead requires a usable disposition, non-negative relevance, yes/maybe access and price fit, sufficient evidence and agreement on all four factual checks. Duplicate groups count once. The result omits source identities, URLs, event facts and private notes.
+
+Both review commands open SQLite read-only, revalidate the paired run contract and make zero network, paid-provider, database-write or publication calls. Evaluation also rebuilds the expected packet from current SQLite state, requires exactly one complete judgment per item and fails closed if the packet is stale or modified outside the judgment and miss fields.
 
 ## Read-only evaluation
 
@@ -90,7 +131,7 @@ Reported measures are:
 - review-item workload proxy; and
 - actual review minutes and minutes per draft when supplied.
 
-These measures need interpretation. A draft is not an approved recommendation, a discovered source may duplicate an event across platforms, provider cost fields are unverified, and one paired window cannot establish repeatability. Human review should record relevance, access, price fit and evidence quality before deciding whether Product Circle deserves continued discovery budget.
+These measures need interpretation. A draft is not an approved recommendation, a discovered source may duplicate an event across platforms, provider cost fields are unverified, and one paired window cannot establish repeatability. Use the private operator review above for decision-quality judgments; the lower-level evaluator remains useful for ingestion-funnel and cost diagnostics.
 
 ## Milestone decision rule
 
